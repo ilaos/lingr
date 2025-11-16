@@ -8,6 +8,7 @@ import { BackgroundGrain } from "@/components/BackgroundGrain";
 import { Colors, Spacing, Typography, BorderRadius } from "@/constants/theme";
 import { useControlState } from "@/hooks/useControlState";
 import { usePresenceState } from "@/hooks/usePresenceState";
+import { useNotificationSync } from "@/hooks/useNotificationSync";
 import { notificationService } from "@/services/notificationService";
 import type { FrequencyLevel } from "@/data/ambientNotificationScheduler";
 
@@ -16,6 +17,13 @@ export default function ControlScreen() {
     useControlState();
   const { lastActivity, activityIntensity, mood } = usePresenceState();
   const [notificationPermission, setNotificationPermission] = useState<boolean>(false);
+
+  useNotificationSync({
+    enabled: controls.ambientNotifications,
+    frequency: controls.notificationFrequency,
+    quietHours: controls.quietHours,
+    presenceActive: controls.presenceActive,
+  });
 
   useEffect(() => {
     checkNotificationPermission();
@@ -396,7 +404,7 @@ const styles = StyleSheet.create({
   permissionButtonText: {
     fontSize: Typography.body.fontSize,
     fontWeight: "500",
-    color: Colors.dark.background,
+    color: Colors.dark.backgroundRoot,
   },
   settingContainer: {
     gap: Spacing.sm,

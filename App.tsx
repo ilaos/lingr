@@ -9,13 +9,41 @@ import { StatusBar } from "expo-status-bar";
 import MainTabNavigator from "@/navigation/MainTabNavigator";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { eventsScheduler } from "@/data/eventsScheduler";
+import { ambientNotificationScheduler } from "@/data/ambientNotificationScheduler";
+import { notificationService } from "@/services/notificationService";
 
 export default function App() {
   React.useEffect(() => {
     eventsScheduler.start();
 
+    const initializeNotifications = async () => {
+      await ambientNotificationScheduler.initialize(
+        false,
+        "normal",
+        { start: "23:00", end: "07:00" }
+      );
+    };
+
+    initializeNotifications();
+
+    const notificationListener =
+      notificationService.addNotificationReceivedListener((notification) => {
+        if (__DEV__) {
+          console.log("[Notification] Received:", notification.request.content.body);
+        }
+      });
+
+    const responseListener =
+      notificationService.addNotificationResponseReceivedListener((response) => {
+        if (__DEV__) {
+          console.log("[Notification] Response:", response.notification.request.content.body);
+        }
+      });
+
     return () => {
       eventsScheduler.cleanup();
+      notificationListener.remove();
+      responseListener.remove();
     };
   }, []);
 
