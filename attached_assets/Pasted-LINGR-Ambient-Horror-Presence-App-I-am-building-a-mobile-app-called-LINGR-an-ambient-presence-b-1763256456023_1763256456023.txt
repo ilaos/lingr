@@ -1,0 +1,105 @@
+LINGR — Ambient Horror Presence App
+
+I am building a mobile app called LINGR, an ambient, presence-based horror experience. It is not a traditional app you open — it behaves like a subtle haunting that lives throughout the user's device. The entire product is built around atmosphere, minimalism, unpredictability, and consent-driven interactions.
+
+Please scaffold the project accordingly.
+
+What LINGR Is
+
+LINGR creates the illusion that a supernatural “presence” has attached itself to the user’s phone. Instead of jump scares, the app focuses on dread, subtlety, and environmental ambience through device-level interactions.
+
+The app communicates through:
+
+eerie push notifications
+
+unsettling haptic patterns
+
+brief ringtone flickers
+
+cryptic messages
+
+momentary icon appearances
+
+optional AR “presence detection” events
+
+behavior that adapts to user location (home vs. public)
+
+voice-activated summoning (“Hey Lingr… are you here?”)
+
+Everything must be opt-in, with visible controls to pause, disable, or remove the “presence.”
+
+Core UI/UX Principles
+
+Minimalist, atmospheric interface
+
+Dark, liminal, slightly analog-distorted aesthetic
+
+Animations that feel “alive” and unpredictable
+
+Interface should resemble a paranormal investigation tool, not a normal app
+
+A single “Entity Profile” page that evolves as the haunting deepens
+
+An “Evidence Locker” where captured AR moments, messages, and anomalies are stored
+
+A “Presence Detector” camera screen (for AR flashes)
+
+A Control Center with explicit consent toggles
+
+Everything should feel quiet, unnerving, and narratively cohesive
+
+Primary Features for the Initial Build
+
+Please prepare the project structure so we can gradually build the following:
+
+Push notification engine
+
+Randomized event scheduler (for subtle scares)
+
+Basic AR camera screen (placeholder, no 3D assets yet)
+
+Minimal UI including:
+
+Home (the “Presence”)
+
+Evidence Locker
+
+Presence Detector (AR)
+
+Settings/Consent Center
+
+Voice trigger stubs
+
+GPS-based behavioral flagging (stub)
+
+A simple entity system (one default entity)
+
+Placeholder screens for episodic content
+
+Technical Expectations
+
+Create a clean, scalable project with modern best practices
+
+Modular architecture so entities, events, and scares can be added easily
+
+Use whatever Replit recommends for multi-platform mobile (e.g., React Native Expo or Flutter)
+
+Include a configuration file where we can later define scare types, weights, timing, and triggers
+
+End Goal of This Session
+
+Generate a full starter project for LINGR with:
+
+file structure
+
+placeholder screens
+
+sample components
+
+routing
+
+mock services for notifications, AR, and events
+
+dark atmospheric theme
+
+and a README outlining how each system will later be implemented.
