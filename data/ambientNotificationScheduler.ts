@@ -31,6 +31,7 @@ class AmbientNotificationScheduler {
   private quietHours: QuietHours = { start: "23:00", end: "07:00" };
   private dailyState: DailyNotificationState | null = null;
   private isScheduling: boolean = false;
+  private pendingReschedule: boolean = false;
 
   async initialize(
     enabled: boolean,
@@ -194,6 +195,13 @@ class AmbientNotificationScheduler {
       const times = this.generateRandomTimes(notificationsToSchedule);
 
       for (const time of times) {
+        if (!this.isEnabled) {
+          if (__DEV__) {
+            console.log("[AmbientScheduler] Notifications disabled mid-schedule, stopping");
+          }
+          break;
+        }
+
         const message = messageSystem.getMessage(mood);
         const payload: AmbientPayload = {
           title: "LINGR",
@@ -207,6 +215,14 @@ class AmbientNotificationScheduler {
             payload
           );
           
+          if (!this.isEnabled) {
+            if (__DEV__) {
+              console.log("[AmbientScheduler] Notifications disabled during await, cancelling just-created notification");
+            }
+            await notificationService.cancelNotification(notificationId);
+            break;
+          }
+          
           this.dailyState.scheduledIds.push(notificationId);
           this.dailyState.count++;
         } catch (error) {
@@ -218,6 +234,14 @@ class AmbientNotificationScheduler {
       await this.saveDailyState();
     } finally {
       this.isScheduling = false;
+      
+      if (this.pendingReschedule) {
+        this.pendingReschedule = false;
+        if (__DEV__) {
+          console.log("[AmbientScheduler] Applying pending reschedule");
+        }
+        await this.rescheduleNotifications();
+      }
     }
   }
 
@@ -281,15 +305,15 @@ class AmbientNotificationScheduler {
   }
 
   private async rescheduleNotifications(): Promise<void> {
-    await this.cancelAll();
-    await this.loadDailyState();
-    
-    if (this.dailyState) {
-      this.dailyState.count = 0;
-      this.dailyState.scheduledIds = [];
-      await this.saveDailyState();
+    if (this.isScheduling) {
+      if (__DEV__) {
+        console.log("[AmbientScheduler] Scheduling in progress, queuing reschedule");
+      }
+      this.pendingReschedule = true;
+      return;
     }
-    
+
+    await this.cancelAll();
     await this.scheduleNotifications();
   }
 
