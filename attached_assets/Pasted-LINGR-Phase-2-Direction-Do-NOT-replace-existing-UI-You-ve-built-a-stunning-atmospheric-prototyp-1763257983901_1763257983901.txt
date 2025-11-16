@@ -1,0 +1,144 @@
+LINGR – Phase 2 Direction (Do NOT replace existing UI)
+
+You’ve built a stunning atmospheric prototype. The current UI style, animations, and presence-driven behaviors are perfect. Let’s move into Phase 2, which focuses on deepening the logic layer while preserving the aesthetic.
+
+Important Rules
+
+Do not redesign or restyle the current screens.
+
+Do not replace existing animations or components.
+
+Add depth, subtlety, and logic beneath what exists.
+
+Keep everything quiet, eerie, and minimal.
+
+Phase 2 Goals
+1. Entity Behavior Engine (Stub Only)
+
+Create an internal entityEngine.ts including:
+
+mood progression logic (Dormant → Restless → Active → Agitated)
+
+intensity fluctuation rules
+
+“cooldown” periods where intensity lowers
+
+timers that shift mood at irregular intervals
+
+a placeholder “entity personality” system
+
+No backend needed yet — just simulated behaviors.
+
+2. Cryptic Message System (Expanded)
+
+We need a structured message system, not hardcoded text.
+
+Create a messages.ts module with:
+
+message pools per mood
+
+weighted randomness
+
+cooldowns between repeats
+
+“rare messages” with <5% chance
+
+ability to later add location-based messages
+
+Integrate this into the Presence screen so messages feel alive.
+
+3. Episodes Data Layer (Stub Only)
+
+Convert the Haunts tab from static UI to data-driven:
+
+Create episodes.ts with:
+
+episode id
+
+title
+
+description
+
+locked/unlocked state
+
+optional “teaser” text
+
+“rarity” for future supernatural interactions
+
+placeholder array of 5–8 episodes
+
+The UI should read from this dataset.
+
+4. Evidence Locker Data Model (Stub Only)
+
+Add a very light simulated data layer:
+
+In evidence.ts:
+
+define evidence types (AR, message, anomaly)
+
+structure for timestamp, type, description, id
+
+a simple addEvidence() function
+
+a simple getEvidence() function
+
+Update the Evidence Locker UI to use these instead of dummy placeholders.
+
+5. Event Scheduler (Basic Simulation)
+
+Create a module: eventsScheduler.ts
+
+simulate random “presence events”
+
+every X to Y seconds, generate:
+
+intensity changes
+
+mood shifts
+
+evidence entries
+
+cryptic message refresh
+
+use randomized intervals (e.g., 20–60 seconds)
+
+This should plug into the existing UI and feel like the entity is “alive.”
+
+What NOT To Build Yet
+
+To keep the project clean and in control, do NOT implement:
+
+real AR capture
+
+real notifications
+
+GPS-based behavior
+
+microphone input
+
+background services
+
+external databases
+
+login or user accounts
+
+These will come later.
+
+Final Output for This Phase
+
+The UI should behave exactly the same, but:
+
+moods feel more dynamic
+
+cryptic messages change based on logic
+
+episodes load from data
+
+evidence locker fills with generated anomalies
+
+entity feels interactive and reactive
+
+the presence feels “aware” over time
+
+Let me know once Phase 2 is complete so I can direct Phase 3 (AR Scare Pipeline).
