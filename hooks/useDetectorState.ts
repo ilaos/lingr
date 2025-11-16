@@ -10,6 +10,7 @@ export function useDetectorState(cameraEnabled: boolean, manifestationsEnabled: 
   const [apparitionVisible, setApparitionVisible] = useState(false);
   const [apparitionDuration, setApparitionDuration] = useState(200);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [lastProcessedApparitionId, setLastProcessedApparitionId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isScanning || !cameraEnabled) {
@@ -76,9 +77,9 @@ export function useDetectorState(cameraEnabled: boolean, manifestationsEnabled: 
       const recentApparitions = apparitionSystem.getRecentApparitions(1);
       if (recentApparitions.length > 0) {
         const lastApparition = recentApparitions[0];
-        const timeSinceApparition = Date.now() - lastApparition.timestamp;
         
-        if (timeSinceApparition < 100 && !apparitionVisible) {
+        if (lastApparition.id !== lastProcessedApparitionId && !apparitionVisible) {
+          setLastProcessedApparitionId(lastApparition.id);
           triggerApparition(lastApparition.duration);
           
           if (Math.random() < 0.6) {
@@ -89,7 +90,7 @@ export function useDetectorState(cameraEnabled: boolean, manifestationsEnabled: 
     }, 500);
 
     return () => clearInterval(checkApparitions);
-  }, [cameraEnabled, manifestationsEnabled, apparitionVisible]);
+  }, [cameraEnabled, manifestationsEnabled, apparitionVisible, lastProcessedApparitionId]);
 
   const triggerApparition = (duration: number) => {
     setApparitionDuration(duration);

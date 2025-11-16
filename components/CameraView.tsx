@@ -1,6 +1,5 @@
 import React, { useState, useRef } from "react";
 import { View, StyleSheet, Platform } from "react-native";
-import { CameraView as ExpoCameraView, useCameraPermissions } from "expo-camera";
 import { ThemedText } from "./ThemedText";
 import { Colors, Spacing } from "@/constants/theme";
 
@@ -10,6 +9,20 @@ interface CameraViewProps {
 }
 
 export function CameraView({ isActive, cameraEnabled }: CameraViewProps) {
+  if (Platform.OS === "web") {
+    return (
+      <View style={styles.fallback}>
+        <ThemedText style={styles.fallbackText}>
+          Camera not available on web
+        </ThemedText>
+        <ThemedText style={styles.fallbackHint}>
+          Use Expo Go on a mobile device for AR detection
+        </ThemedText>
+      </View>
+    );
+  }
+
+  const { CameraView: ExpoCameraView, useCameraPermissions } = require("expo-camera");
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef(null);
 
@@ -17,6 +30,9 @@ export function CameraView({ isActive, cameraEnabled }: CameraViewProps) {
     return (
       <View style={styles.fallback}>
         <ThemedText style={styles.fallbackText}>Camera disabled</ThemedText>
+        <ThemedText style={styles.fallbackHint}>
+          Enable in Control settings
+        </ThemedText>
       </View>
     );
   }
@@ -45,16 +61,6 @@ export function CameraView({ isActive, cameraEnabled }: CameraViewProps) {
     );
   }
 
-  if (Platform.OS === "web") {
-    return (
-      <View style={styles.fallback}>
-        <ThemedText style={styles.fallbackText}>
-          Camera not available on web
-        </ThemedText>
-      </View>
-    );
-  }
-
   return (
     <ExpoCameraView
       ref={cameraRef}
@@ -75,17 +81,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: Spacing.xl,
+    gap: Spacing.md,
   },
   fallbackText: {
     fontSize: 14,
     color: Colors.dark.dimmed,
     textAlign: "center",
-    marginBottom: Spacing.md,
+  },
+  fallbackHint: {
+    fontSize: 12,
+    color: Colors.dark.dimmed,
+    textAlign: "center",
+    opacity: 0.6,
   },
   fallbackLink: {
     fontSize: 14,
     color: Colors.dark.accent,
     textAlign: "center",
     textDecorationLine: "underline",
+    marginTop: Spacing.md,
   },
 });
