@@ -4,40 +4,49 @@ import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { PresenceVisual } from "@/components/PresenceVisual";
 import { ActivityMeter } from "@/components/ActivityMeter";
+import { EntityMood } from "@/components/EntityMood";
+import { BackgroundGrain } from "@/components/BackgroundGrain";
 import { Colors, Spacing, Typography } from "@/constants/theme";
 import { usePresenceState } from "@/hooks/usePresenceState";
 
 export default function PresenceScreen() {
-  const { entity, lastActivity, activityIntensity } = usePresenceState();
+  const { entity, lastActivity, activityIntensity, mood } = usePresenceState();
 
   return (
-    <ScreenScrollView contentContainerStyle={styles.container}>
-      <View style={styles.visualContainer}>
-        <PresenceVisual intensity={activityIntensity} />
-      </View>
-
-      <View style={styles.infoContainer}>
-        <ThemedText style={styles.entityName}>{entity.name}</ThemedText>
-        
-        <View style={styles.lastActivityContainer}>
-          <ThemedText style={styles.label}>LAST ACTIVITY</ThemedText>
-          <ThemedText style={styles.timestamp}>{lastActivity}</ThemedText>
+    <View style={styles.root}>
+      <BackgroundGrain />
+      <ScreenScrollView contentContainerStyle={styles.container}>
+        <View style={styles.visualContainer}>
+          <PresenceVisual intensity={activityIntensity} />
         </View>
 
-        <View style={styles.meterContainer}>
-          <ThemedText style={styles.label}>INTENSITY</ThemedText>
-          <ActivityMeter intensity={activityIntensity} />
-        </View>
+        <View style={styles.infoContainer}>
+          <ThemedText style={styles.entityName}>{entity.name}</ThemedText>
 
-        <View style={styles.messageContainer}>
-          <ThemedText style={styles.message}>{entity.message}</ThemedText>
+          <EntityMood
+            mood={mood}
+            intensity={activityIntensity}
+            recentActivity={lastActivity}
+          />
+
+          <View style={styles.meterContainer}>
+            <ThemedText style={styles.label}>PRESENCE STRENGTH</ThemedText>
+            <ActivityMeter intensity={activityIntensity} />
+          </View>
+
+          <View style={styles.messageContainer}>
+            <ThemedText style={styles.message}>{entity.message}</ThemedText>
+          </View>
         </View>
-      </View>
-    </ScreenScrollView>
+      </ScreenScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
   container: {
     alignItems: "center",
     paddingHorizontal: Spacing.xl,
@@ -54,23 +63,15 @@ const styles = StyleSheet.create({
   entityName: {
     fontSize: Typography.title.fontSize,
     fontWeight: Typography.title.fontWeight,
+    letterSpacing: Typography.title.letterSpacing,
     textAlign: "center",
-    letterSpacing: 2,
     textTransform: "uppercase",
-  },
-  lastActivityContainer: {
-    gap: Spacing.sm,
   },
   label: {
     fontSize: Typography.caption.fontSize,
     fontWeight: Typography.caption.fontWeight,
     color: Colors.dark.dimmed,
-    letterSpacing: 1.5,
-  },
-  timestamp: {
-    fontSize: Typography.monospace.fontSize,
-    fontFamily: "monospace",
-    color: Colors.dark.accent,
+    letterSpacing: Typography.caption.letterSpacing,
   },
   meterContainer: {
     gap: Spacing.sm,

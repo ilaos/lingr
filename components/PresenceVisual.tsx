@@ -6,6 +6,7 @@ import Animated, {
   withRepeat,
   withSequence,
   withTiming,
+  Easing,
 } from "react-native-reanimated";
 
 interface PresenceVisualProps {
@@ -14,13 +15,24 @@ interface PresenceVisualProps {
 
 export function PresenceVisual({ intensity = 0.5 }: PresenceVisualProps) {
   const translateY = useSharedValue(0);
+  const translateX = useSharedValue(0);
   const opacity = useSharedValue(0.85);
+  const scale = useSharedValue(1);
 
   React.useEffect(() => {
     translateY.value = withRepeat(
       withSequence(
-        withTiming(-3, { duration: 4000 }),
-        withTiming(3, { duration: 4000 })
+        withTiming(-4, { duration: 5000, easing: Easing.inOut(Easing.ease) }),
+        withTiming(4, { duration: 5000, easing: Easing.inOut(Easing.ease) })
+      ),
+      -1,
+      false
+    );
+
+    translateX.value = withRepeat(
+      withSequence(
+        withTiming(2, { duration: 6000, easing: Easing.inOut(Easing.ease) }),
+        withTiming(-2, { duration: 6000, easing: Easing.inOut(Easing.ease) })
       ),
       -1,
       false
@@ -28,8 +40,17 @@ export function PresenceVisual({ intensity = 0.5 }: PresenceVisualProps) {
 
     opacity.value = withRepeat(
       withSequence(
-        withTiming(0.85, { duration: 2000 }),
-        withTiming(1.0, { duration: 2000 })
+        withTiming(0.8, { duration: 3000, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0.95, { duration: 3000, easing: Easing.inOut(Easing.ease) })
+      ),
+      -1,
+      false
+    );
+
+    scale.value = withRepeat(
+      withSequence(
+        withTiming(0.98, { duration: 4000, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1.02, { duration: 4000, easing: Easing.inOut(Easing.ease) })
       ),
       -1,
       false
@@ -37,7 +58,11 @@ export function PresenceVisual({ intensity = 0.5 }: PresenceVisualProps) {
   }, []);
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
+    transform: [
+      { translateY: translateY.value },
+      { translateX: translateX.value },
+      { scale: scale.value },
+    ],
     opacity: opacity.value,
   }));
 

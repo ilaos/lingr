@@ -64,10 +64,12 @@ export const Typography = {
   title: {
     fontSize: 28,
     fontWeight: "700" as const,
+    letterSpacing: -0.5,
   },
   heading: {
     fontSize: 20,
     fontWeight: "600" as const,
+    letterSpacing: -0.3,
   },
   body: {
     fontSize: 16,
@@ -76,6 +78,7 @@ export const Typography = {
   caption: {
     fontSize: 13,
     fontWeight: "500" as const,
+    letterSpacing: 1.5,
   },
   monospace: {
     fontSize: 14,
@@ -106,18 +109,32 @@ export const Fonts = Platform.select({
 });
 
 export const Shadows = {
+  soft: {
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
+  },
   floating: {
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
     elevation: 2,
   },
   glow: {
     shadowColor: "#8B7FF5",
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  accentGlow: {
+    shadowColor: "#8B7FF5",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
   },
 };

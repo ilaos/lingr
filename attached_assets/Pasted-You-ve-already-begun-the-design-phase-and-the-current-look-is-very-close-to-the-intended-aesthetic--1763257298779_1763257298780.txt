@@ -1,0 +1,156 @@
+You’ve already begun the design phase and the current look is very close to the intended aesthetic. Let’s refine and expand the design intention so future iterations stay aligned.
+
+Overall Creative Direction
+
+LINGR is an ambient haunting on the user’s phone.
+The UI must feel like:
+
+a presence is watching, shifting, or evolving
+
+every screen is part of the same supernatural “entity”
+
+atmospheric > decorative
+
+clean and minimal > horror cliché
+
+Keep the current style:
+Dark charcoal backgrounds, ethereal purple accents (#8B7FF5), subtle glow, film-grain texture, slow pulses, smooth spring animations.
+
+Screen Behavior Expectations
+1. Presence Screen (Home)
+
+This is the “heart” of the haunting.
+The user should feel like the entity is always just behind the screen.
+
+Enhance it with:
+
+subtle idle motions in the entity image (drift, distortion, shimmer)
+
+ambient background grain or micro glints
+
+intensity meter that shifts slowly on its own
+
+cryptic messages that change over time based on entity “mood”
+
+The user should feel watched but in a quiet, unsettling way.
+
+2. Evidence Locker
+
+You started this perfectly.
+
+Enhance by:
+
+adding category filters (All / AR / Audio / Messages)
+
+a “void” animation when empty (soft floating particles)
+
+each entry having timestamps + type tags
+
+item click → opens “case file” modal with eerie framing
+
+3. Detector Screen (AR Mode)
+
+This should feel like a paranormal investigation tool.
+
+Enhance with:
+
+scanning lines slowly sweeping
+
+distortion near the reticle
+
+flicker animations when “presence detected”
+
+a “capture log” event entry added to Evidence Locker
+
+Keep everything subtle and not cartoonish.
+
+4. Control Center
+
+This is the user’s safety hub.
+
+Enhance with:
+
+an “Entity Status” section showing:
+
+Mood
+
+Intensity
+
+Recent activity
+
+toggles grouped elegantly under:
+
+Ambient
+
+Visual
+
+Audio
+
+Location
+
+AR
+
+a Pause Haunting button that triggers a calm, eerie dissolution animation
+
+double confirmation for “Remove Presence”
+
+Design System Adjustments
+
+Please solidify the following in your design system:
+
+Typography:
+
+Title: Inter or SF with slightly reduced tracking
+
+Secondary: a monospace for timestamps, data streams
+
+Icons:
+
+Simple outline glyphs with faint glow
+
+Shadows:
+
+Ultra soft, atmospheric, not “material design” drops
+
+Animations:
+
+Slow ease-in-out, delayed jitter, pulsation
+
+No harsh entrance animations
+
+Important: Keep All Existing Screens
+
+Do not replace or restart the UI.
+Continue evolving what you’ve built with these updated guidelines.
+
+Immediate Next Steps
+
+Add the missing screen: Episodes / Haunts Hub
+
+A mysterious list of “Haunt chapters”
+
+Cards that look like locked files, with one available in prototype
+
+Add entity mood logic stubs (just UI for now)
+
+Add presence-driven micro-interactions across all tabs
+
+Add a subtle animated background layer app-wide
+
+Long-term Goal
+
+Build LINGR as a cohesive horror presence with:
+
+persistent entity behavior
+
+evidence collection
+
+ambient scares
+
+AR flashes
+
+episodic content
+
+consent-driven settings
+
+evolving entity persona

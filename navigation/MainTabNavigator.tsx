@@ -6,6 +6,7 @@ import { Platform, StyleSheet } from "react-native";
 import PresenceScreen from "@/screens/PresenceScreen";
 import EvidenceScreen from "@/screens/EvidenceScreen";
 import DetectorScreen from "@/screens/DetectorScreen";
+import EpisodesScreen from "@/screens/EpisodesScreen";
 import ControlScreen from "@/screens/ControlScreen";
 import { useTheme } from "@/hooks/useTheme";
 import { HeaderTitle } from "@/components/HeaderTitle";
@@ -14,6 +15,7 @@ export type MainTabParamList = {
   Presence: undefined;
   Evidence: undefined;
   Detector: undefined;
+  Episodes: undefined;
   Control: undefined;
 };
 
@@ -90,10 +92,20 @@ export default function MainTabNavigator() {
         }}
       />
       <Tab.Screen
+        name="Episodes"
+        component={EpisodesScreen}
+        options={{
+          title: "HAUNTS",
+          tabBarIcon: ({ color, size }) => (
+            <Feather name="book-open" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
         name="Control"
         component={ControlScreen}
         options={{
-          title: "CONTROL CENTER",
+          title: "CONTROL",
           tabBarIcon: ({ color, size }) => (
             <Feather name="sliders" size={size} color={color} />
           ),
