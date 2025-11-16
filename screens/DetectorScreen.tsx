@@ -35,7 +35,7 @@ export default function DetectorScreen() {
     capture,
     forceApparition,
     handleApparitionComplete,
-  } = useDetectorState(controls.camera);
+  } = useDetectorState(controls.camera, controls.cameraManifestations);
 
   const scanLineY = useSharedValue(0);
   const distortionOpacity = useSharedValue(0);

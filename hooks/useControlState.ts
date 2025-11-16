@@ -5,6 +5,7 @@ interface Controls {
   notifications: boolean;
   haptics: boolean;
   camera: boolean;
+  cameraManifestations: boolean;
   location: boolean;
   publicSpaceBehavior: boolean;
 }
@@ -15,6 +16,7 @@ export function useControlState() {
     notifications: true,
     haptics: true,
     camera: true,
+    cameraManifestations: true,
     location: false,
     publicSpaceBehavior: true,
   });
@@ -28,7 +30,8 @@ export function useControlState() {
   };
 
   const clearEvidence = () => {
-    console.log("Evidence cleared");
+    const { evidenceStore } = require("@/data/evidence");
+    evidenceStore.clearEvidence();
   };
 
   const removePresence = () => {
@@ -37,6 +40,7 @@ export function useControlState() {
       notifications: false,
       haptics: false,
       camera: false,
+      cameraManifestations: false,
       location: false,
       publicSpaceBehavior: false,
     });

@@ -4,7 +4,7 @@ import { evidenceStore, generateEvidenceDescription } from "@/data/evidence";
 import { entityEngine } from "@/data/entityEngine";
 import { apparitionSystem } from "@/data/apparitions";
 
-export function useDetectorState(cameraEnabled: boolean) {
+export function useDetectorState(cameraEnabled: boolean, manifestationsEnabled: boolean) {
   const [isScanning, setIsScanning] = useState(false);
   const [isPresenceDetected, setIsPresenceDetected] = useState(false);
   const [apparitionVisible, setApparitionVisible] = useState(false);
@@ -18,7 +18,11 @@ export function useDetectorState(cameraEnabled: boolean) {
       return;
     }
 
-    apparitionSystem.start();
+    if (manifestationsEnabled) {
+      apparitionSystem.start();
+    } else {
+      apparitionSystem.stop();
+    }
 
     const detectionInterval = setInterval(() => {
       const intensity = entityEngine.getIntensity();
@@ -63,10 +67,10 @@ export function useDetectorState(cameraEnabled: boolean) {
       clearInterval(scanInterval);
       apparitionSystem.stop();
     };
-  }, [isScanning, cameraEnabled]);
+  }, [isScanning, cameraEnabled, manifestationsEnabled]);
 
   useEffect(() => {
-    if (!cameraEnabled) return;
+    if (!cameraEnabled || !manifestationsEnabled) return;
 
     const checkApparitions = setInterval(() => {
       const recentApparitions = apparitionSystem.getRecentApparitions(1);
@@ -85,7 +89,7 @@ export function useDetectorState(cameraEnabled: boolean) {
     }, 500);
 
     return () => clearInterval(checkApparitions);
-  }, [cameraEnabled, apparitionVisible]);
+  }, [cameraEnabled, manifestationsEnabled, apparitionVisible]);
 
   const triggerApparition = (duration: number) => {
     setApparitionDuration(duration);
@@ -152,9 +156,9 @@ export function useDetectorState(cameraEnabled: boolean) {
   }, [isPresenceDetected, cameraEnabled]);
 
   const forceApparition = useCallback(() => {
-    if (!cameraEnabled) return;
+    if (!cameraEnabled || !manifestationsEnabled) return;
     apparitionSystem.forceApparition();
-  }, [cameraEnabled]);
+  }, [cameraEnabled, manifestationsEnabled]);
 
   const showToast = (message: string) => {
     setToastMessage(message);

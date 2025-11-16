@@ -143,6 +143,13 @@ export default function ControlScreen() {
             onValueChange={(value) => updateControl("camera", value)}
             disabled={!controls.presenceActive}
           />
+          <ControlToggle
+            label="Camera Manifestations"
+            description="Allow apparitions to appear during scans"
+            value={controls.cameraManifestations}
+            onValueChange={(value) => updateControl("cameraManifestations", value)}
+            disabled={!controls.presenceActive || !controls.camera}
+          />
         </View>
 
         <View style={styles.divider} />
