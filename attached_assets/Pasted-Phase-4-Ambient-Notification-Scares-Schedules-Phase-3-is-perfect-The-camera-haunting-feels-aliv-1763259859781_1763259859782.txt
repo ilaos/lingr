@@ -1,0 +1,233 @@
+Phase 4: Ambient Notification Scares & Schedules
+
+Phase 3 is perfect. The camera haunting feels alive and subtle.
+For Phase 4, don’t touch the visual design — we’re adding an ambient notification layer on top of the existing logic.
+
+The goal:
+
+LINGR occasionally “contacts” the user on its own with eerie, quiet notifications that feel like the same entity from the Presence screen.
+
+Everything must remain consent-based, rate-limited, and non-alarming.
+
+1. Notification Service Module
+
+Create a new module, e.g. services/notificationService.ts that:
+
+Uses Expo’s local notifications (no remote / backend push)
+
+Handles:
+
+requesting notification permissions
+
+scheduling one-off notifications at specific times
+
+cancelling scheduled notifications
+
+mapping entity events → notification payloads
+
+APIs (suggested):
+
+requestNotificationPermission(): Promise<boolean>
+
+scheduleAmbientNotification(at: Date, payload: AmbientPayload): Promise<string>
+(returns notification ID)
+
+cancelNotification(id: string): Promise<void>
+
+cancelAllAmbientNotifications(): Promise<void>
+
+canSendNotifications(): Promise<boolean>
+
+AmbientPayload should allow:
+
+title
+
+body
+
+optional tag (e.g. mood, intensity, source)
+
+2. Notification Settings UI (Control Screen)
+
+In the Control / Settings screen, add a clearly-labeled section:
+
+“Ambient Contacts”
+
+Include:
+
+Master toggle: “Allow ambient notifications”
+
+Option selector (radio or dropdown):
+
+“Low (1–2 per day)”
+
+“Normal (3–5 per day)”
+
+“High (for testing)” – clearly labeled as developer/debug use, not default
+
+Quiet hours:
+
+Time range selector, e.g. “Do not disturb between [start] and [end]”
+
+Reasonable defaults: e.g. 23:00–07:00
+
+Rules:
+
+If notification permission is not granted → show a “Enable in system settings” hint and disable the toggles.
+
+Language must be calm and clear, e.g.
+
+“LINGR may occasionally send unsettling messages.”
+
+“You can turn this off any time.”
+
+3. Ambient Notification Scheduler
+
+Create a new module, e.g. data/ambientNotificationScheduler.ts that:
+
+Reads:
+
+ambient notification enabled flag
+
+intensity & mood from entityEngine
+
+user’s chosen frequency level
+
+quiet hours
+
+Behavior:
+
+When enabled, schedule notifications at random times within allowed windows.
+
+Use irregular intervals (no obvious pattern).
+
+Respect maximum counts per 24 hours:
+
+Low: max 2 / day
+
+Normal: max 5 / day
+
+High (testing): max 10 / day
+
+Never schedule inside quiet hours.
+
+If intensity is very low (Dormant), send fewer or no notifications.
+
+If intensity is very high (Agitated), notifications become slightly more frequent, but still within the user’s chosen cap.
+
+Persist the daily count (for that day) locally so counts survive app restarts.
+
+You can store simple state via async storage or equivalent.
+
+4. Notification Content
+
+Reuse the existing cryptic message system instead of inventing separate text:
+
+For each scheduled notification:
+
+Select the current entity mood & intensity
+
+Request an appropriate cryptic message from the message system
+
+Use:
+
+Title: something minimal like “LINGR” or a very short phrase
+
+Body: mood-appropriate cryptic line
+
+Important constraints:
+
+No panic-inducing content (no threats, no fake emergencies).
+
+Keep it in the same tone as the app: surreal, liminal, eerie, not “I see you through your camera” or anything that feels unsafe.
+
+Examples of acceptable tone (for your internal logic, not hardcoded from me):
+
+“It lingers at the edge of your signal.”
+
+“The room feels different now.”
+
+But let the existing message pools drive this.
+
+5. Integration with Existing Event System
+
+Connect the ambientNotificationScheduler to the existing Phase 2/3 systems:
+
+When the app starts:
+
+Initialize the scheduler and resync any future notifications
+
+When user:
+
+changes notification settings
+
+toggles “Allow ambient notifications”
+
+changes quiet hours
+
+…then:
+
+Recalculate and reschedule notifications accordingly
+
+Cancel old ones as needed (using the notification IDs)
+
+You can hook into existing control-state or create a simple settings store.
+
+6. Safety & Opt-Out
+
+Global rules:
+
+If master “Haunting” / “Presence” control is turned OFF → cancel all ambient notifications.
+
+If the user disables OS-level notification permission:
+
+Stop scheduling immediately
+
+Show disabled state in Control screen with explanation
+
+Ensure there is no way for notifications to continue after user has clearly opted out.
+
+7. Dev / Debug Support (Non-user Facing)
+
+Add dev-only helpers:
+
+A button or command (guarded by a DEV flag) to:
+
+“Send test ambient notification now”
+
+Logging in console whenever:
+
+a notification is scheduled
+
+a notification is cancelled
+
+an ambient notification is fired
+
+This helps confirm logic without waiting hours.
+
+8. Out of Scope for Phase 4
+
+Do NOT implement yet:
+
+Remote push (no backend push tokens)
+
+Rich media notifications
+
+Action buttons in notifications
+
+Deep linking into specific episode/evidence items (may come later)
+
+Local notifications + ambience are enough for this phase.
+
+Phase 4 is complete when:
+
+User can enable/disable ambient notifications from Control screen.
+
+Frequency and quiet hours are respected.
+
+Notifications use cryptic messages that reflect current mood/intensity.
+
+Daily caps per level are enforced.
+
+Turning off haunting OR ambient notifications cancels all scheduled ambient notifications.
+
+System behaves safely and predictably across app restarts.
