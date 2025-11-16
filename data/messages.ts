@@ -1,4 +1,5 @@
 import { MoodType } from "@/components/EntityMood";
+import { type EnvironmentMode } from "./environmentEngine";
 
 export interface CrypticMessage {
   id: string;
@@ -8,6 +9,7 @@ export interface CrypticMessage {
   rarity: "common" | "uncommon" | "rare";
   lastShown?: number;
   minCooldown?: number;
+  environment?: EnvironmentMode | "any";
 }
 
 const MESSAGE_POOLS: CrypticMessage[] = [
@@ -169,16 +171,84 @@ const MESSAGE_POOLS: CrypticMessage[] = [
     mood: "any",
     rarity: "uncommon",
   },
+  {
+    id: "home_dormant",
+    text: "It has nested deeper into this place.",
+    weight: 0.7,
+    mood: "dormant",
+    rarity: "uncommon",
+    environment: "HOME",
+  },
+  {
+    id: "home_restless",
+    text: "These walls remember what happened here.",
+    weight: 0.8,
+    mood: "restless",
+    rarity: "common",
+    environment: "HOME",
+  },
+  {
+    id: "home_active",
+    text: "It knows every corner of this sanctuary.",
+    weight: 0.9,
+    mood: "active",
+    rarity: "common",
+    environment: "HOME",
+  },
+  {
+    id: "home_agitated",
+    text: "Your home is its domain now.",
+    weight: 0.8,
+    mood: "agitated",
+    rarity: "uncommon",
+    environment: "HOME",
+  },
+  {
+    id: "away_dormant",
+    text: "It follows, patient and unseen.",
+    weight: 0.7,
+    mood: "dormant",
+    rarity: "uncommon",
+    environment: "AWAY",
+  },
+  {
+    id: "away_restless",
+    text: "Distance means nothing to what clings to you.",
+    weight: 0.8,
+    mood: "restless",
+    rarity: "common",
+    environment: "AWAY",
+  },
+  {
+    id: "away_active",
+    text: "It observes unfamiliar territory through your eyes.",
+    weight: 0.9,
+    mood: "active",
+    rarity: "common",
+    environment: "AWAY",
+  },
+  {
+    id: "away_agitated",
+    text: "New places stir its curiosity and hunger.",
+    weight: 0.8,
+    mood: "agitated",
+    rarity: "uncommon",
+    environment: "AWAY",
+  },
 ];
 
 class MessageSystem {
   private messageHistory: Map<string, number> = new Map();
   private readonly GLOBAL_COOLDOWN = 15000;
 
-  private filterValidMessages(mood: MoodType): CrypticMessage[] {
+  private filterValidMessages(mood: MoodType, environment?: EnvironmentMode): CrypticMessage[] {
     const now = Date.now();
     return MESSAGE_POOLS.filter((msg) => {
       if (msg.mood !== mood && msg.mood !== "any") return false;
+
+      if (environment && msg.environment && msg.environment !== "any" && msg.environment !== environment) {
+        return false;
+      }
 
       const lastShown = this.messageHistory.get(msg.id);
       if (lastShown) {
@@ -204,8 +274,8 @@ class MessageSystem {
     return messages[messages.length - 1];
   }
 
-  public getMessage(mood: MoodType): string {
-    const validMessages = this.filterValidMessages(mood);
+  public getMessage(mood: MoodType, environment?: EnvironmentMode): string {
+    const validMessages = this.filterValidMessages(mood, environment);
 
     if (validMessages.length === 0) {
       return "...";

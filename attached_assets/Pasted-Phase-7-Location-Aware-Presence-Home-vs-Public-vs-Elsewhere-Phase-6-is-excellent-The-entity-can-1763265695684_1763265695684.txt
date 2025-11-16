@@ -1,0 +1,294 @@
+Phase 7: Location-Aware Presence (Home vs Public vs Elsewhere)
+
+Phase 6 is excellent. The entity can now be summoned and responds moodfully.
+
+For Phase 7, don’t touch any of the existing design language or core flows. We’re adding a location-awareness layer that subtly changes behavior depending on where the user is — without being creepy, invasive, or stalker-like.
+
+Key goals:
+
+Respectful, explicit consent
+
+Coarse “environment” states (Home / Away / Elsewhere), not precise tracking
+
+No addresses, no maps, no routes shown to user
+
+Use location only to modulate: intensity, apparitions, notifications, and messaging tone
+
+1. Location Service Module
+
+Create a module, e.g. services/locationService.ts, that:
+
+Uses Expo location APIs
+
+Handles:
+
+Requesting location permissions (foreground only)
+
+Reading current coordinates
+
+Tracking a coarse environment state
+
+APIs might include:
+
+requestLocationPermission(): Promise<boolean>
+
+getCurrentLocation(): Promise<Coordinates | null>
+
+watchEnvironment(callback: (env: EnvironmentState) => void): UnsubscribeFn
+
+stopWatchingEnvironment(): void
+
+Define an EnvironmentState type, something like:
+
+mode: "UNKNOWN" | "HOME" | "AWAY"
+
+lastUpdated: number
+
+distanceFromHome?: number
+
+Important constraints:
+
+No background tracking. Only update location while the app is open.
+
+No long-term path history. Keep only:
+
+home location (if user set it)
+
+last known location
+
+last environment mode
+
+2. “Home Base” Setup in Control Screen
+
+In the Control tab, under the Location section:
+
+Add:
+
+Toggle: “Location Awareness”
+
+When OFF:
+
+No location calls are made
+
+Environment state becomes “UNKNOWN”
+
+When ON:
+
+App can use foreground location while open
+
+Button: “Set Current Location as Home Base”
+
+Visible when Location Awareness is ON and permission is granted
+
+When tapped:
+
+Get current coordinates once
+
+Save as homeBase in persistence layer
+
+UI details:
+
+Show a small summary text:
+
+If home base set:
+“Home base saved.”
+
+If not set yet:
+“Home base not defined.”
+
+If location permission is denied:
+
+Show calm message:
+“Location is disabled. Enable it in system settings to use home/away behaviors.”
+
+All language should stay neutral and non-invasive.
+
+3. Environment Classification Logic
+
+Once homeBase is set and Location Awareness is ON:
+
+When app is open and location permission is granted:
+
+Periodically (e.g. every 30–60 seconds) get current location
+
+Compute distance to homeBase
+
+Classify:
+
+If distance <= ~150m: mode = "HOME"
+
+If distance > ~150m: mode = "AWAY"
+
+If homeBase is not set:
+
+Keep mode = "AWAY" by default (or “UNKNOWN” until first home is set).
+
+Environment state should be:
+
+Stored in a small envState store (e.g. environmentEngine.ts)
+
+Persisted via the existing persistence service:
+
+lastEnvironmentMode
+
+homeBase coordinates
+
+Location updates must stop when:
+
+Location Awareness toggle is OFF
+
+App goes into background (as far as platform allows)
+
+Permission is revoked
+
+4. Presence Screen: Environment Indicator
+
+Update the Presence screen to subtly reflect environment state:
+
+Add a small line or pill somewhere near the entity status, for example:
+
+HOME → “It knows this place well.”
+
+AWAY → “It follows quietly.”
+
+UNKNOWN → “It has not settled anywhere.”
+
+Don’t show coordinates, addresses, or distance. Only the abstract state.
+
+5. Behavior Modulation by Environment
+
+Now wire environment state into existing systems:
+
+A. Entity Engine
+
+At HOME:
+
+Slightly higher intensity growth from normal events (e.g. +10–20% of usual increments)
+
+Higher probability of mood drifting upward during active interaction (scans, summoning)
+
+AWAY:
+
+Slightly lower intensity effect from scanning & summoning
+
+Natural decay may be slightly stronger
+
+B. Apparitions (Detector)
+
+At HOME:
+
+Use current probabilities as baseline (no change, or small boost)
+
+AWAY:
+
+Reduce apparition chance by a modest factor (e.g. 50–70% of normal)
+
+This keeps social/public scanning less likely to trigger big scares
+
+If Location Awareness is OFF → use the existing default behavior (as now).
+
+C. Ambient Notifications
+
+When scheduling ambient notifications:
+
+If last known environment is HOME:
+
+Use normal frequency caps, content tone unchanged
+
+If last known environment is AWAY:
+
+Slightly bias toward softer lines from the message system (you can tag some messages as “subtle/public-safe” and prioritize those)
+
+If environment UNKNOWN:
+
+Behave like AWAY for safety
+
+No explicit mention in notifications of “home” or “outside”. Just quietly modulated tone.
+
+D. Cryptic Message System
+
+Optionally, add an environment parameter to your message selection so it can:
+
+Prefer certain messages in HOME mode vs AWAY
+
+Example:
+
+HOME: “It lingers in familiar corners.”
+
+AWAY: “It keeps its distance, for now.”
+
+6. Evidence Tagging (Optional but Nice)
+
+When adding new evidence entries (especially from Detector):
+
+Add an optional field: environmentMode (HOME / AWAY / UNKNOWN) at time of capture
+
+In Evidence detail view, you can show a small label like:
+
+“Recorded at Home”
+
+“Recorded Away”
+
+Keep it text-only, no coordinates or map.
+
+7. Safety & Privacy Constraints
+
+Global safety rules:
+
+No display of street names, cities, coordinates, or routes.
+
+No long-term movement history.
+
+No background/always-on location tracking.
+
+If Location Awareness is turned OFF:
+
+Immediately stop location updates
+
+Stop environment-based modulation (fall back to default behavior)
+
+If OS-level location permission is revoked:
+
+Treat as Location Awareness OFF
+
+Show calm explanation in Control screen
+
+All location data must stay on-device and be used only for:
+
+environment state
+
+subtle behavior choices
+
+evidence tagging
+
+8. Out of Scope for Phase 7
+
+Do not implement:
+
+Geofenced AR events tied to specific public places
+
+Background geofencing while app is closed
+
+Any map UI or route visualization
+
+Location-based multiplayer or sharing
+
+This phase is purely single-user, coarse “home vs away” state, used for mood- and behavior-modulation.
+
+Phase 7 Completion Checklist
+
+Phase 7 is complete when:
+
+There is a Location Awareness toggle and Home Base setup in Control.
+
+Home Base can be set and persists.
+
+Environment mode (HOME / AWAY / UNKNOWN) is computed while the app is open.
+
+Presence screen subtly reflects environment mode.
+
+Entity behavior, apparitions, and ambient notifications are slightly modulated by environment.
+
+Evidence optionally tags environment at capture.
+
+All behavior gracefully falls back when Location Awareness is off or permission is denied.

@@ -1,4 +1,5 @@
 import { entityEngine } from "./entityEngine";
+import { environmentEngine } from "./environmentEngine";
 
 export interface ApparitionEvent {
   id: string;
@@ -28,6 +29,21 @@ class ApparitionSystem {
   private checkTimer: NodeJS.Timeout | null = null;
   private isActive: boolean = false;
   private forceNextApparition: boolean = false;
+
+  private getEnvironmentProbabilityMultiplier(): number {
+    const envState = environmentEngine.getEnvironmentState();
+    
+    switch (envState.mode) {
+      case "HOME":
+        return 1.0;
+      case "AWAY":
+        return 0.4;
+      case "UNKNOWN":
+        return 0.7;
+      default:
+        return 1.0;
+    }
+  }
 
   start(): void {
     if (this.isActive) return;
@@ -62,7 +78,9 @@ class ApparitionSystem {
     }
 
     const mood = entityEngine.getMood();
-    const probability = APPARITION_PROBABILITY[mood];
+    const baseProbability = APPARITION_PROBABILITY[mood];
+    const envMultiplier = this.getEnvironmentProbabilityMultiplier();
+    const probability = baseProbability * envMultiplier;
     const shouldTrigger = this.forceNextApparition || Math.random() < probability;
 
     if (shouldTrigger) {

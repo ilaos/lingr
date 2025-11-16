@@ -14,6 +14,7 @@ import { Colors, Spacing, Typography } from "@/constants/theme";
 import { usePresenceState } from "@/hooks/usePresenceState";
 import { persistenceService, type AppMetadata } from "@/state/persistenceService";
 import { evidenceStore } from "@/data/evidence";
+import { environmentEngine, type EnvironmentMode } from "@/data/environmentEngine";
 import { type PresenceStackParamList } from "@/navigation/PresenceStackNavigator";
 
 function formatTimeSince(ms: number): string {
@@ -91,10 +92,17 @@ type PresenceScreenNavigationProp = NativeStackNavigationProp<
   "PresenceHome"
 >;
 
+const ENVIRONMENT_MESSAGES: Record<EnvironmentMode, string> = {
+  HOME: "It knows this place well.",
+  AWAY: "It follows quietly.",
+  UNKNOWN: "It has not settled anywhere.",
+};
+
 export default function PresenceScreen() {
   const navigation = useNavigation<PresenceScreenNavigationProp>();
   const { entity, lastActivity, activityIntensity, mood } = usePresenceState();
   const [lastKnownState, setLastKnownState] = React.useState<AppMetadata | null>(null);
+  const [environmentMode, setEnvironmentMode] = React.useState<EnvironmentMode>("UNKNOWN");
 
   React.useEffect(() => {
     const loadLastKnownState = async () => {
@@ -105,6 +113,16 @@ export default function PresenceScreen() {
     };
 
     loadLastKnownState();
+
+    const updateEnvironment = () => {
+      const envState = environmentEngine.getEnvironmentState();
+      setEnvironmentMode(envState.mode);
+    };
+
+    updateEnvironment();
+    const intervalId = setInterval(updateEnvironment, 5000);
+
+    return () => clearInterval(intervalId);
   }, []);
 
   const handleAskLingr = () => {
@@ -128,6 +146,12 @@ export default function PresenceScreen() {
             intensity={activityIntensity}
             recentActivity={lastActivity}
           />
+
+          <View style={styles.environmentIndicator}>
+            <ThemedText style={styles.environmentText}>
+              {ENVIRONMENT_MESSAGES[environmentMode]}
+            </ThemedText>
+          </View>
 
           <View style={styles.meterContainer}>
             <ThemedText style={styles.label}>PRESENCE STRENGTH</ThemedText>
@@ -274,5 +298,20 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 2,
     color: Colors.dark.dimmed,
+  },
+  environmentIndicator: {
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    borderRadius: 12,
+    backgroundColor: `${Colors.dark.accent}10`,
+    borderWidth: 1,
+    borderColor: `${Colors.dark.accent}30`,
+    alignSelf: "center",
+  },
+  environmentText: {
+    fontSize: Typography.caption.fontSize - 1,
+    color: Colors.dark.dimmed,
+    fontStyle: "italic",
+    letterSpacing: 0.5,
   },
 });

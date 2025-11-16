@@ -15,6 +15,7 @@ import { entityEngine } from "@/data/entityEngine";
 import { evidenceStore } from "@/data/evidence";
 import { episodeManager } from "@/data/episodes";
 import { summonEngine } from "@/data/summonEngine";
+import { environmentEngine } from "@/data/environmentEngine";
 import { persistenceService } from "@/state/persistenceService";
 
 export default function App() {
@@ -24,6 +25,7 @@ export default function App() {
       await evidenceStore.initialize();
       await episodeManager.initialize();
       await summonEngine.initialize();
+      await environmentEngine.initialize();
 
       eventsScheduler.start();
 

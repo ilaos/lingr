@@ -3,6 +3,7 @@ import * as Haptics from "expo-haptics";
 import { evidenceStore, generateEvidenceDescription } from "@/data/evidence";
 import { entityEngine } from "@/data/entityEngine";
 import { apparitionSystem } from "@/data/apparitions";
+import { environmentEngine } from "@/data/environmentEngine";
 
 export function useDetectorState(cameraEnabled: boolean, manifestationsEnabled: boolean) {
   const [isScanning, setIsScanning] = useState(false);
@@ -104,10 +105,12 @@ export function useDetectorState(cameraEnabled: boolean, manifestationsEnabled: 
 
   const handleApparitionCapture = () => {
     const description = generateEvidenceDescription("anomaly");
+    const envState = environmentEngine.getEnvironmentState();
     evidenceStore.addEvidence("anomaly", description, {
       source: "detector",
       intensity: entityEngine.getIntensity(),
       mood: entityEngine.getMood(),
+      environment: envState.mode,
     });
   };
 
@@ -133,11 +136,13 @@ export function useDetectorState(cameraEnabled: boolean, manifestationsEnabled: 
       : generateEvidenceDescription("anomaly");
     
     const type = isPresenceDetected ? "capture" : "anomaly";
+    const envState = environmentEngine.getEnvironmentState();
     
     evidenceStore.addEvidence(type, description, {
       source: "detector",
       intensity: entityEngine.getIntensity(),
       mood: entityEngine.getMood(),
+      environment: envState.mode,
     });
 
     if (isPresenceDetected) {

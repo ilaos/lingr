@@ -9,6 +9,7 @@ const STORAGE_KEYS = {
   CONTROL_SETTINGS: "@lingr/control_settings",
   APP_METADATA: "@lingr/app_metadata",
   SUMMON_EXCHANGES: "@lingr/summon_exchanges",
+  ENVIRONMENT_DATA: "@lingr/environment_data",
 } as const;
 
 interface VersionedState {
@@ -69,6 +70,13 @@ export interface AppMetadata {
   lastOpenedAt: number;
   lastEvidenceCount: number;
   lastMood: string;
+}
+
+export interface EnvironmentData {
+  homeBase: { latitude: number; longitude: number } | null;
+  locationAwarenessEnabled: boolean;
+  lastEnvironmentMode: "UNKNOWN" | "HOME" | "AWAY";
+  lastEnvironmentUpdate: number;
 }
 
 class PersistenceService {
@@ -189,6 +197,14 @@ class PersistenceService {
     return this.loadWithVersion<any[]>(STORAGE_KEYS.SUMMON_EXCHANGES);
   }
 
+  async saveEnvironmentData(data: EnvironmentData): Promise<void> {
+    await this.saveWithVersion(STORAGE_KEYS.ENVIRONMENT_DATA, data);
+  }
+
+  async loadEnvironmentData(): Promise<EnvironmentData | null> {
+    return this.loadWithVersion<EnvironmentData>(STORAGE_KEYS.ENVIRONMENT_DATA);
+  }
+
   async clearAllState(): Promise<void> {
     try {
       await AsyncStorage.multiRemove([
@@ -197,6 +213,7 @@ class PersistenceService {
         STORAGE_KEYS.EPISODES,
         STORAGE_KEYS.APP_METADATA,
         STORAGE_KEYS.SUMMON_EXCHANGES,
+        STORAGE_KEYS.ENVIRONMENT_DATA,
       ]);
     } catch (error) {
       console.error("[PersistenceService] Failed to clear all state:", error);

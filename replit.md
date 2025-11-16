@@ -49,18 +49,21 @@ Preferred communication style: Simple, everyday language.
 - Dynamic intensity fluctuation with cooldown periods
 - Personality traits influence behavior (volatility, aggression, patience, curiosity)
 - Timer-based mood shifts at irregular intervals
+- Environment-aware behavior modulation (reduces intensity when AWAY from home)
 
 **Message System** (`data/messages.ts`):
 - Structured cryptic message pools organized by entity mood
 - Weighted randomness with rarity tiers (common, uncommon, rare)
 - Cooldown mechanisms prevent message repetition
 - Context-aware message selection based on current entity state
+- Environment-specific messages (HOME vs AWAY contexts)
 
 **Evidence System** (`data/evidence.ts`):
 - Three evidence types: captures (AR photos), messages (cryptic texts), anomalies (detected events)
-- Auto-generated evidence with metadata (timestamp, location, intensity, mood)
+- Auto-generated evidence with metadata (timestamp, location, intensity, mood, environment)
 - In-memory storage with 100-item cap
 - Category filtering and chronological sorting
+- Environment mode tagged on all evidence entries
 
 **Events Scheduler** (`data/eventsScheduler.ts`):
 - Orchestrates random presence events (intensity changes, mood shifts, evidence generation)
@@ -73,6 +76,7 @@ Preferred communication style: Simple, everyday language.
 - Mood-based appearance rates (2% dormant → 25% agitated)
 - Brief duration flashes (100-400ms) with cooldown periods
 - Triggers haptic feedback on detection
+- Environment-aware probability modulation (60% reduction when AWAY, 30% when UNKNOWN)
 
 ### Camera & AR Features
 
@@ -105,11 +109,28 @@ Preferred communication style: Simple, everyday language.
 - Silent notifications with no sound (atmospheric only)
 - Notification response handling for user interactions
 
+### Location Awareness System
+
+**Location Service** (`services/locationService.ts`):
+- Coarse location tracking using Expo Location API (foreground only)
+- Permission handling with graceful fallback to UNKNOWN state
+- Coordinate reading for home base setting and distance calculations
+- Privacy-conscious design: no address storage, coarse coordinates only
+
+**Environment Engine** (`data/environmentEngine.ts`):
+- Environment classification: HOME (within 100m of home base), AWAY (beyond threshold), UNKNOWN (no home set or permissions denied)
+- Distance-based classification using Haversine formula
+- Persistent environment state storage via AsyncStorage
+- Real-time environment mode updates (polled every 5 seconds on Presence screen)
+- Modulates entity behavior, apparitions, notifications, and messages based on location context
+
 ### Consent & Control System
 
 **Control Center** (`screens/ControlScreen.tsx`):
 - Master presence toggle (pause/resume all haunting)
-- Granular feature toggles: notifications, haptics, camera, location, manifestations
+- Granular feature toggles: notifications, haptics, camera, location awareness, manifestations
+- Location awareness toggle with explicit permission requests
+- Set Home Base button for defining home coordinates (only shown when location awareness enabled)
 - Notification frequency slider and quiet hours configuration
 - Evidence clearing and complete presence removal options
 - All changes immediately sync with background systems
@@ -170,6 +191,7 @@ Preferred communication style: Simple, everyday language.
 - **Expo Camera**: Live camera feed for AR detection
 - **Expo Haptics**: Tactile feedback on detection events
 - **Expo Notifications**: Local push notification scheduling and handling
+- **Expo Location**: Coarse location tracking for environment awareness
 
 ### Storage & Assets
 - **AsyncStorage**: Key-value persistence for notification state

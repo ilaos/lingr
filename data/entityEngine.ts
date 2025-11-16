@@ -3,6 +3,7 @@ import {
   persistenceService,
   type EntityPersistedState,
 } from "@/state/persistenceService";
+import { environmentEngine } from "@/data/environmentEngine";
 
 export interface EntityState {
   mood: MoodType;
@@ -70,6 +71,21 @@ class EntityEngine {
   private moodTimer: NodeJS.Timeout | null = null;
   private intensityTimer: NodeJS.Timeout | null = null;
   private isInitialized: boolean = false;
+
+  private getEnvironmentIntensityMultiplier(): number {
+    const envState = environmentEngine.getEnvironmentState();
+    
+    switch (envState.mode) {
+      case "HOME":
+        return 1.0;
+      case "AWAY":
+        return 0.6;
+      case "UNKNOWN":
+        return 0.8;
+      default:
+        return 1.0;
+    }
+  }
 
   async initialize(): Promise<void> {
     if (this.isInitialized) return;
@@ -169,16 +185,18 @@ class EntityEngine {
       return;
     }
 
+    const envMultiplier = this.getEnvironmentIntensityMultiplier();
     const { volatility, aggression } = this.state.personality;
-    const intensityDelta = (Math.random() - 0.3) * volatility * 0.15;
+    const baseDelta = (Math.random() - 0.3) * volatility * 0.15;
+    const intensityDelta = baseDelta * envMultiplier;
 
     this.state.intensity = Math.max(
       0.1,
       Math.min(0.95, this.state.intensity + intensityDelta)
     );
 
-    if (Math.random() < aggression * 0.1) {
-      this.state.intensity = Math.min(0.9, this.state.intensity + 0.1);
+    if (Math.random() < aggression * 0.1 * envMultiplier) {
+      this.state.intensity = Math.min(0.9, this.state.intensity + 0.1 * envMultiplier);
     }
 
     this.state.mood = this.getMoodFromIntensity(this.state.intensity);
@@ -201,16 +219,18 @@ class EntityEngine {
       return;
     }
 
+    const envMultiplier = this.getEnvironmentIntensityMultiplier();
     const { volatility, curiosity } = this.state.personality;
-    const delta = (Math.random() - 0.5) * volatility * 0.08;
+    const baseDelta = (Math.random() - 0.5) * volatility * 0.08;
+    const delta = baseDelta * envMultiplier;
 
     this.state.intensity = Math.max(
       0.1,
       Math.min(0.95, this.state.intensity + delta)
     );
 
-    if (Math.random() < curiosity * 0.05) {
-      this.state.intensity = Math.min(0.7, this.state.intensity + 0.05);
+    if (Math.random() < curiosity * 0.05 * envMultiplier) {
+      this.state.intensity = Math.min(0.7, this.state.intensity + 0.05 * envMultiplier);
     }
 
     this.state.lastIntensityChange = now;

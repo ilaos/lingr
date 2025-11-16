@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { notificationService, AmbientPayload } from "@/services/notificationService";
 import { entityEngine } from "./entityEngine";
 import { messageSystem } from "./messages";
+import { environmentEngine } from "./environmentEngine";
 
 export type FrequencyLevel = "low" | "normal" | "high";
 
@@ -202,7 +203,8 @@ class AmbientNotificationScheduler {
           break;
         }
 
-        const message = messageSystem.getMessage(mood);
+        const envState = environmentEngine.getEnvironmentState();
+        const message = messageSystem.getMessage(mood, envState.mode);
         const payload: AmbientPayload = {
           title: "LINGR",
           body: message,

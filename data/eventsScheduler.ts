@@ -1,6 +1,7 @@
 import { entityEngine } from "./entityEngine";
 import { evidenceStore, generateEvidenceDescription } from "./evidence";
 import { messageSystem } from "./messages";
+import { environmentEngine } from "./environmentEngine";
 
 interface PresenceEvent {
   type: "intensity_change" | "mood_shift" | "evidence_generation" | "message_refresh";
@@ -144,9 +145,11 @@ class EventsScheduler {
     }
 
     const description = generateEvidenceDescription(evidenceType);
+    const envState = environmentEngine.getEnvironmentState();
     const entry = evidenceStore.addEvidence(evidenceType, description, {
       intensity,
       mood,
+      environment: envState.mode,
     });
 
     event.data = {

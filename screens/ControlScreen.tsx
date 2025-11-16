@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { View, StyleSheet, Pressable, Alert } from "react-native";
+import * as Haptics from "expo-haptics";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { ControlToggle } from "@/components/ControlToggle";
@@ -10,6 +11,8 @@ import { useControlState } from "@/hooks/useControlState";
 import { usePresenceState } from "@/hooks/usePresenceState";
 import { useNotificationSync } from "@/hooks/useNotificationSync";
 import { notificationService } from "@/services/notificationService";
+import { locationService } from "@/services/locationService";
+import { environmentEngine } from "@/data/environmentEngine";
 import type { FrequencyLevel } from "@/data/ambientNotificationScheduler";
 
 export default function ControlScreen() {
@@ -17,6 +20,9 @@ export default function ControlScreen() {
     useControlState();
   const { lastActivity, activityIntensity, mood } = usePresenceState();
   const [notificationPermission, setNotificationPermission] = useState<boolean>(false);
+  const [locationPermission, setLocationPermission] = useState<"granted" | "denied" | "undetermined" | "restricted">("undetermined");
+  const [hasHomeBase, setHasHomeBase] = useState<boolean>(false);
+  const [isSettingHomeBase, setIsSettingHomeBase] = useState<boolean>(false);
 
   useNotificationSync({
     enabled: controls.ambientNotifications,
@@ -27,11 +33,20 @@ export default function ControlScreen() {
 
   useEffect(() => {
     checkNotificationPermission();
+    checkLocationStatus();
   }, []);
 
   const checkNotificationPermission = async () => {
     const canSend = await notificationService.canSendNotifications();
     setNotificationPermission(canSend);
+  };
+
+  const checkLocationStatus = async () => {
+    const permStatus = await locationService.getPermissionStatus();
+    setLocationPermission(permStatus);
+    
+    const homeBase = environmentEngine.getHomeBase();
+    setHasHomeBase(!!homeBase);
   };
 
   const handleRequestNotificationPermission = async () => {
@@ -42,6 +57,64 @@ export default function ControlScreen() {
         "Permission Denied",
         "Please enable notifications in your device settings to receive ambient contacts."
       );
+    }
+  };
+
+  const handleLocationAwarenessToggle = async (enabled: boolean) => {
+    if (enabled && locationPermission !== "granted") {
+      const granted = await locationService.requestLocationPermission();
+      if (granted) {
+        setLocationPermission("granted");
+        await environmentEngine.setLocationAwarenessEnabled(true);
+        updateControl("locationEnabled", true);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      } else {
+        setLocationPermission("denied");
+        Alert.alert(
+          "Location Access Required",
+          "Location awareness requires access to your location while using the app. Enable it in system settings to use this feature."
+        );
+      }
+    } else {
+      await environmentEngine.setLocationAwarenessEnabled(enabled);
+      updateControl("locationEnabled", enabled);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+  };
+
+  const handleSetHomeBase = async () => {
+    if (isSettingHomeBase) return;
+    
+    setIsSettingHomeBase(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    try {
+      const location = await locationService.getCurrentLocation();
+      
+      if (!location) {
+        Alert.alert(
+          "Unable to Get Location",
+          "Could not determine your current location. Please make sure location services are enabled and try again."
+        );
+        setIsSettingHomeBase(false);
+        return;
+      }
+
+      await environmentEngine.setHomeBase(location);
+      setHasHomeBase(true);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      
+      Alert.alert(
+        "Home Base Set",
+        "Your current location has been saved as your home base."
+      );
+    } catch (error) {
+      Alert.alert(
+        "Error",
+        "Failed to set home base. Please try again."
+      );
+    } finally {
+      setIsSettingHomeBase(false);
     }
   };
 
@@ -187,20 +260,45 @@ export default function ControlScreen() {
 
         <View style={styles.section}>
           <ThemedText style={styles.sectionTitle}>LOCATION</ThemedText>
+          
+          {locationPermission === "denied" && controls.locationEnabled ? (
+            <View style={styles.permissionDeniedContainer}>
+              <ThemedText style={styles.permissionDeniedText}>
+                Location is disabled. Enable it in system settings to use home/away behaviors.
+              </ThemedText>
+            </View>
+          ) : null}
+
           <ControlToggle
             label="Location Awareness"
-            description="Adapt behavior to your location"
-            value={controls.location}
-            onValueChange={(value) => updateControl("location", value)}
+            description="Adapt behavior to your environment"
+            value={controls.locationEnabled}
+            onValueChange={handleLocationAwarenessToggle}
             disabled={!controls.presenceActive}
           />
-          <ControlToggle
-            label="Public Space Behavior"
-            description="Reduce activity in public places"
-            value={controls.publicSpaceBehavior}
-            onValueChange={(value) => updateControl("publicSpaceBehavior", value)}
-            disabled={!controls.presenceActive || !controls.location}
-          />
+
+          {controls.locationEnabled && locationPermission === "granted" ? (
+            <View style={styles.locationSubsection}>
+              <View style={styles.homeBaseStatus}>
+                <ThemedText style={styles.homeBaseLabel}>
+                  {hasHomeBase ? "Home base saved." : "Home base not defined."}
+                </ThemedText>
+              </View>
+              
+              <Pressable
+                style={[
+                  styles.homeBaseButton,
+                  isSettingHomeBase && styles.homeBaseButtonDisabled,
+                ]}
+                onPress={handleSetHomeBase}
+                disabled={isSettingHomeBase}
+              >
+                <ThemedText style={styles.homeBaseButtonText}>
+                  {isSettingHomeBase ? "Setting..." : "Set Current Location as Home Base"}
+                </ThemedText>
+              </Pressable>
+            </View>
+          ) : null}
         </View>
 
         <View style={styles.divider} />
@@ -479,5 +577,47 @@ const styles = StyleSheet.create({
     fontSize: Typography.caption.fontSize,
     color: Colors.dark.warning,
     fontWeight: "500",
+  },
+  permissionDeniedContainer: {
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    backgroundColor: `${Colors.dark.warning}15`,
+    borderRadius: BorderRadius.xs,
+    borderWidth: 1,
+    borderColor: `${Colors.dark.warning}40`,
+    marginBottom: Spacing.md,
+  },
+  permissionDeniedText: {
+    fontSize: Typography.caption.fontSize,
+    color: Colors.dark.dimmed,
+    lineHeight: Typography.caption.fontSize * 1.5,
+  },
+  locationSubsection: {
+    gap: Spacing.md,
+    marginTop: Spacing.sm,
+  },
+  homeBaseStatus: {
+    paddingVertical: Spacing.xs,
+  },
+  homeBaseLabel: {
+    fontSize: Typography.caption.fontSize,
+    color: Colors.dark.dimmed,
+  },
+  homeBaseButton: {
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.xl,
+    backgroundColor: Colors.dark.backgroundSecondary,
+    borderRadius: BorderRadius.xs,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+    alignItems: "center",
+  },
+  homeBaseButtonDisabled: {
+    opacity: 0.5,
+  },
+  homeBaseButtonText: {
+    fontSize: Typography.body.fontSize,
+    fontWeight: "500",
+    color: Colors.dark.text,
   },
 });

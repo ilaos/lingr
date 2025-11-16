@@ -13,7 +13,7 @@ interface Controls {
   haptics: boolean;
   camera: boolean;
   cameraManifestations: boolean;
-  location: boolean;
+  locationEnabled: boolean;
   publicSpaceBehavior: boolean;
   ambientNotifications: boolean;
   notificationFrequency: FrequencyLevel;
@@ -26,7 +26,7 @@ const DEFAULT_CONTROLS: Controls = {
   haptics: true,
   camera: true,
   cameraManifestations: true,
-  location: false,
+  locationEnabled: false,
   publicSpaceBehavior: true,
   ambientNotifications: false,
   notificationFrequency: "normal",
@@ -48,7 +48,7 @@ export function useControlState() {
           haptics: saved.hapticsEnabled,
           camera: saved.cameraEnabled,
           cameraManifestations: saved.cameraManifestationsEnabled,
-          location: saved.locationEnabled,
+          locationEnabled: saved.locationEnabled,
           publicSpaceBehavior: true,
           ambientNotifications: saved.ambientNotificationsEnabled,
           notificationFrequency: saved.notificationFrequency,
@@ -79,7 +79,7 @@ export function useControlState() {
         notificationFrequency: controls.notificationFrequency,
         quietHours: controls.quietHours,
         hapticsEnabled: controls.haptics,
-        locationEnabled: controls.location,
+        locationEnabled: controls.locationEnabled,
       });
     };
 
@@ -106,7 +106,7 @@ export function useControlState() {
       haptics: false,
       camera: false,
       cameraManifestations: false,
-      location: false,
+      locationEnabled: false,
       publicSpaceBehavior: false,
       ambientNotifications: false,
       notificationFrequency: "normal",

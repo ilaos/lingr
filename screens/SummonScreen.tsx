@@ -15,6 +15,7 @@ import { Colors, Spacing } from "@/constants/theme";
 import { summonEngine, type SummonExchange } from "@/data/summonEngine";
 import { entityEngine } from "@/data/entityEngine";
 import { evidenceStore } from "@/data/evidence";
+import { environmentEngine } from "@/data/environmentEngine";
 import { MoodType } from "@/components/EntityMood";
 
 const theme = Colors.dark;
@@ -63,9 +64,11 @@ export function SummonScreen() {
     setTimeout(async () => {
       if (response) {
         if (response.shouldCreateEvidence) {
+          const envState = environmentEngine.getEnvironmentState();
           evidenceStore.addEvidence("message", response.responseText, {
             source: "summoning",
             intent: response.intent,
+            environment: envState.mode,
           });
         }
 
