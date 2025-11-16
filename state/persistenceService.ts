@@ -8,6 +8,7 @@ const STORAGE_KEYS = {
   EPISODES: "@lingr/episodes",
   CONTROL_SETTINGS: "@lingr/control_settings",
   APP_METADATA: "@lingr/app_metadata",
+  SUMMON_EXCHANGES: "@lingr/summon_exchanges",
 } as const;
 
 interface VersionedState {
@@ -180,6 +181,14 @@ class PersistenceService {
     return this.loadWithVersion<AppMetadata>(STORAGE_KEYS.APP_METADATA);
   }
 
+  async saveSummonExchanges(exchanges: any[]): Promise<void> {
+    await this.saveWithVersion(STORAGE_KEYS.SUMMON_EXCHANGES, exchanges);
+  }
+
+  async loadSummonExchanges(): Promise<any[] | null> {
+    return this.loadWithVersion<any[]>(STORAGE_KEYS.SUMMON_EXCHANGES);
+  }
+
   async clearAllState(): Promise<void> {
     try {
       await AsyncStorage.multiRemove([
@@ -187,6 +196,7 @@ class PersistenceService {
         STORAGE_KEYS.EVIDENCE,
         STORAGE_KEYS.EPISODES,
         STORAGE_KEYS.APP_METADATA,
+        STORAGE_KEYS.SUMMON_EXCHANGES,
       ]);
     } catch (error) {
       console.error("[PersistenceService] Failed to clear all state:", error);

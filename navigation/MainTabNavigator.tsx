@@ -3,7 +3,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { Platform, StyleSheet } from "react-native";
-import PresenceScreen from "@/screens/PresenceScreen";
+import { PresenceStackNavigator } from "./PresenceStackNavigator";
 import EvidenceScreen from "@/screens/EvidenceScreen";
 import DetectorScreen from "@/screens/DetectorScreen";
 import EpisodesScreen from "@/screens/EpisodesScreen";
@@ -61,7 +61,7 @@ export default function MainTabNavigator() {
     >
       <Tab.Screen
         name="Presence"
-        component={PresenceScreen}
+        component={PresenceStackNavigator}
         options={{
           headerTitle: () => <HeaderTitle title="LINGR" />,
           headerRight: () => null,

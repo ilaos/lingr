@@ -1,5 +1,9 @@
 import React from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Pressable } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { PresenceVisual } from "@/components/PresenceVisual";
@@ -10,6 +14,7 @@ import { Colors, Spacing, Typography } from "@/constants/theme";
 import { usePresenceState } from "@/hooks/usePresenceState";
 import { persistenceService, type AppMetadata } from "@/state/persistenceService";
 import { evidenceStore } from "@/data/evidence";
+import { type PresenceStackParamList } from "@/navigation/PresenceStackNavigator";
 
 function formatTimeSince(ms: number): string {
   const seconds = Math.floor(ms / 1000);
@@ -81,7 +86,13 @@ function LastKnownStateCard({ metadata, currentMood }: { metadata: AppMetadata; 
   );
 }
 
+type PresenceScreenNavigationProp = NativeStackNavigationProp<
+  PresenceStackParamList,
+  "PresenceHome"
+>;
+
 export default function PresenceScreen() {
+  const navigation = useNavigation<PresenceScreenNavigationProp>();
   const { entity, lastActivity, activityIntensity, mood } = usePresenceState();
   const [lastKnownState, setLastKnownState] = React.useState<AppMetadata | null>(null);
 
@@ -95,6 +106,11 @@ export default function PresenceScreen() {
 
     loadLastKnownState();
   }, []);
+
+  const handleAskLingr = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    navigation.navigate("Summon");
+  };
 
   return (
     <View style={styles.root}>
@@ -125,6 +141,16 @@ export default function PresenceScreen() {
           {lastKnownState ? (
             <LastKnownStateCard metadata={lastKnownState} currentMood={mood} />
           ) : null}
+
+          <Pressable style={styles.askLingrButton} onPress={handleAskLingr}>
+            <Feather
+              name="radio"
+              size={16}
+              color={Colors.dark.dimmed}
+              style={styles.askLingrIcon}
+            />
+            <ThemedText style={styles.askLingrText}>ASK LINGR</ThemedText>
+          </Pressable>
         </View>
       </ScreenScrollView>
     </View>
@@ -226,5 +252,27 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
     color: Colors.dark.dimmed,
     lineHeight: 18,
+  },
+  askLingrButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xl,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+    backgroundColor: Colors.dark.backgroundSecondary,
+    marginTop: Spacing.lg,
+    alignSelf: "center",
+  },
+  askLingrIcon: {
+    marginRight: Spacing.sm,
+  },
+  askLingrText: {
+    fontFamily: "monospace",
+    fontSize: 12,
+    letterSpacing: 2,
+    color: Colors.dark.dimmed,
   },
 });

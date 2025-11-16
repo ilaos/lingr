@@ -1,0 +1,257 @@
+Phase 5 is perfect. The entity now persists and remembers.
+
+For Phase 6, don’t change any existing design language. We’re going to add a “Summoning” interaction layer – a way for the user to ask LINGR questions and get eerie, mood-aware responses.
+
+For now, this will be primarily text-based (with a mic button as a UI affordance / stub), not a full background “Hey Lingr” hotword system.
+
+1. New “Summon” / “Ask LINGR” Entry Point
+
+Add a new way to access the summoning console:
+
+Option A (preferred):
+On the Presence screen, add a subtle button:
+
+Label: “Ask LINGR”
+
+Icon: small waveform or mic outline
+
+Position: near the bottom or under the entity, in-theme and minimal
+
+This opens a new screen or modal:
+
+Summoning Console Screen – a dedicated place to “talk to the presence.”
+
+Do not add a 6th tab; keep it nested under Presence.
+
+2. Summoning Console UI
+
+Create a new screen/component, e.g. SummonScreen:
+
+Layout:
+
+Top area:
+
+Title: “Summoning Channel”
+
+Tiny subtitle tied to mood, e.g.
+
+Dormant: “It is quiet, but listening.”
+
+Restless: “It shifts when you speak.”
+
+Active: “It answers quickly now.”
+
+Agitated: “Careful what you ask.”
+
+Middle area:
+
+Conversation history list (bubbles), most recent at the bottom:
+
+User messages (right side, muted styling)
+
+LINGR responses (left side, eerie styling, same font treatment as cryptic messages)
+
+Bottom area:
+
+Text input box: “Ask it something…”
+
+Send button (paper plane or subtle arrow)
+
+Small mic icon inside or next to the input (see §3)
+
+Animation:
+
+Smooth fade & slide for new messages
+
+No “typing dots” needed yet, but a slight delay (300–800ms) before responses makes it feel more conscious.
+
+3. Mic Button (Stubbed / Optional Voice)
+
+Add a mic icon in the input area that:
+
+For now:
+
+Either triggers OS keyboard dictation or simply shows a tooltip:
+“Voice commands coming soon.”
+
+Or, if you prefer:
+
+Can be wired to a simple “startListening” stub that doesn’t yet do STT, just flips a “Listening…” visual state for a couple seconds.
+
+Important:
+No background hotword detection, no always-on listening.
+Only visual, in-console “listening” state for now.
+
+4. Intent Engine for User Questions
+
+Create a new module, e.g. data/summonEngine.ts that:
+
+Accepts user input text
+
+Determines an intent
+
+Generates a response using:
+
+current entity mood
+
+current intensity
+
+existing cryptic message pools (reuse where possible)
+
+some new tailored lines
+
+Example intents (not exhaustive, but implement at least these):
+
+Presence check
+
+User patterns: “are you here”, “are you there”, “are you real”, “where are you”
+
+Response style changes by mood.
+
+Activity / mood inquiry
+
+“what do you want”, “why are you here”, “what are you doing”, “how active are you”
+
+Responses reference intensity and mood.
+
+Evidence / past events
+
+“what happened while I was gone”, “what did you do”, “did anything happen”
+
+Responses reference:
+
+evidence count since lastOpenedAt
+
+recent mood changes / high intensity spikes
+
+Threat / dismissal / boundaries
+
+“go away”, “leave me alone”, “stop”, “you’re not real”
+
+Responses can be:
+
+calm & withdrawn at low intensity
+
+slightly needling/cryptic when agitated
+
+No real threats, just eerie lines.
+
+Random / fallback
+
+Anything else → fallback pool of mood-aware, ambiguous responses.
+
+Implementation suggestion:
+
+Normalize text (lowercase, strip punctuation)
+
+Simple keyword or phrase-based matching (no AI needed):
+
+e.g. contains “are you here”, “where”, “you want”, “why”, “stop”, “leave”, etc.
+
+Map to intent enum: PRESENCE_QUERY, MOOD_QUERY, ACTIVITY_QUERY, BOUNDARY, GENERIC
+
+For each intent + mood, pick a response from small predefined pools.
+
+The engine should return:
+
+intent
+
+responseText
+
+(optional) sideEffect (see §5)
+
+5. Integration with Entity & Evidence
+
+Make the summoning interaction affect the entity slightly:
+
+When user sends a message:
+
+Increase “interaction count” (already tracked)
+
+Slight nudge to intensity (e.g. ± small amounts depending on intent)
+
+For certain intents:
+
+If user uses boundary/dismissal language (“go away”, “leave me alone”):
+
+Slight chance of lowering intensity
+
+Mood may drift down over time
+
+If user repeatedly calls on it (“are you there” many times):
+
+Slight chance to gradually raise intensity
+
+Optionally, you can:
+
+Log some responses as message-type evidence (e.g. rare or particularly eerie replies)
+
+e.g. if a “rare” summoning reply is used, create an evidence entry.
+
+Tie all of this into existing entityEngine and evidence APIs instead of duplicating logic.
+
+6. Persistence of Conversation
+
+Use the existing persistence service to:
+
+Store last N (e.g. 20–50) summoning exchanges (user + response)
+
+Restore them when the Summon screen is opened again
+
+The console should feel like an ongoing channel, not a fresh chat every time.
+
+7. Safety, Tone, and Limits
+
+Important constraints:
+
+No responses implying:
+
+direct control over user
+
+real-world surveillance (“I see you through your camera,” “I see your house,” etc.)
+
+real-life harm or threats
+
+Always stay abstract, uncanny, and surreal.
+
+Keep responses short (1–2 lines max).
+
+Also:
+
+Rate-limit:
+
+No more than 1 response per second
+
+Ignore or gently decline if user sends a flurry of messages (e.g. “It grows quiet.”)
+
+8. Out of Scope for Phase 6
+
+Do not implement:
+
+Real speech-to-text
+
+Background hotword detection (“Hey Lingr” when app is closed)
+
+System-level voice assistant integration (Siri/Google)
+
+Multi-language parsing
+
+This phase is in-app text-based summoning only, with voice as a visual affordance/stub.
+
+Phase 6 Completion Checklist
+
+Phase 6 is complete when:
+
+Presence screen has an entry point to an “Ask LINGR” / Summoning console.
+
+Summoning console shows a two-sided conversation history.
+
+User can type questions; LINGR replies with mood-aware, intent-based responses.
+
+Summoning interactions slightly influence entity intensity/state.
+
+Some replies optionally produce evidence entries (for rare/strong responses).
+
+Conversation history persists across app restarts.
+
+Mic icon exists but does not require real STT or background hotword detection.
