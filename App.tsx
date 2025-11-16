@@ -14,20 +14,57 @@ import { notificationService } from "@/services/notificationService";
 import { entityEngine } from "@/data/entityEngine";
 import { evidenceStore } from "@/data/evidence";
 import { episodeManager } from "@/data/episodes";
+import { episodeEngine } from "@/data/episodeEngine";
 import { summonEngine } from "@/data/summonEngine";
 import { environmentEngine } from "@/data/environmentEngine";
 import { persistenceService } from "@/state/persistenceService";
+import { useEpisodeRunner } from "@/hooks/useEpisodeRunner";
 
 export default function App() {
+  const [isToastVisible, setIsToastVisible] = React.useState(false);
+  const [toastMessage, setToastMessage] = React.useState("");
+  const [messageVisible, setMessageVisible] = React.useState(false);
+  const [message, setMessage] = React.useState("");
+
+  const { handleOpenApp, handleNotificationSent } = useEpisodeRunner({
+    onToast: (msg) => {
+      setToastMessage(msg);
+      setIsToastVisible(true);
+      setTimeout(() => setIsToastVisible(false), 3000);
+    },
+    onShowMessage: (msg) => {
+      setMessage(msg);
+      setMessageVisible(true);
+    },
+    onEpisodeComplete: async (episodeId) => {
+      episodeManager.completeEpisode(episodeId);
+      
+      const nextEpisode = episodeManager
+        .getEpisodes()
+        .find((ep) => ep.unlockConditions?.previousEpisode === episodeId);
+      
+      if (nextEpisode) {
+        episodeManager.unlockEpisode(nextEpisode.id);
+      }
+
+      if (__DEV__) {
+        console.log(`[App] Episode ${episodeId} completed, next unlocked: ${nextEpisode?.id || 'none'}`);
+      }
+    },
+  });
+
   React.useEffect(() => {
     const initializeApp = async () => {
       await entityEngine.initialize();
       await evidenceStore.initialize();
       await episodeManager.initialize();
+      await episodeEngine.initialize();
       await summonEngine.initialize();
       await environmentEngine.initialize();
 
       eventsScheduler.start();
+
+      handleOpenApp();
 
       await ambientNotificationScheduler.initialize(
         false,
@@ -91,6 +128,7 @@ export default function App() {
         if (__DEV__) {
           console.log("[Notification] Response:", response.notification.request.content.body);
         }
+        handleNotificationSent();
       });
 
     return () => {

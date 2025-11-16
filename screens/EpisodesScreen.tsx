@@ -1,23 +1,59 @@
 import React from "react";
-import { View, StyleSheet, Pressable } from "react-native";
+import { View, StyleSheet, Pressable, Modal } from "react-native";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
+import { Button } from "@/components/Button";
 import { Feather } from "@expo/vector-icons";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
+  withRepeat,
+  withSequence,
+  Easing,
 } from "react-native-reanimated";
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from "@/constants/theme";
 import { Episode, episodeManager } from "@/data/episodes";
+import { episodeEngine } from "@/data/episodeEngine";
 
-function EpisodeCard({ episode }: { episode: Episode }) {
+function EpisodeCard({
+  episode,
+  isActive,
+  onPress,
+}: {
+  episode: Episode;
+  isActive: boolean;
+  onPress: () => void;
+}) {
   const scale = useSharedValue(1);
   const opacity = useSharedValue(1);
+  const borderOpacity = useSharedValue(0.3);
+
+  React.useEffect(() => {
+    if (isActive) {
+      borderOpacity.value = withRepeat(
+        withSequence(
+          withSpring(1, { damping: 10, stiffness: 100 }),
+          withSpring(0.3, { damping: 10, stiffness: 100 })
+        ),
+        -1,
+        false
+      );
+    } else {
+      borderOpacity.value = withSpring(0.3, { damping: 10, stiffness: 100 });
+    }
+  }, [isActive]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
     opacity: opacity.value,
+  }));
+
+  const animatedBorderStyle = useAnimatedStyle(() => ({
+    borderColor: isActive
+      ? `rgba(139, 127, 245, ${borderOpacity.value})`
+      : Colors.dark.border,
   }));
 
   const handlePressIn = () => {
@@ -35,41 +71,50 @@ function EpisodeCard({ episode }: { episode: Episode }) {
   return (
     <Animated.View style={animatedStyle}>
       <Pressable
-        onPress={() => {}}
+        onPress={onPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         disabled={episode.status === "locked"}
-        style={[
-          styles.card,
-          episode.status === "locked" && styles.lockedCard,
-        ]}
       >
-        <View style={styles.cardHeader}>
-          <View style={styles.numberContainer}>
-            <ThemedText style={styles.episodeNumber}>
-              {String(episode.number).padStart(2, "0")}
-            </ThemedText>
-          </View>
-          <View style={styles.statusBadge}>
-            {episode.status === "locked" ? (
-              <Feather name="lock" size={14} color={Colors.dark.dimmed} />
-            ) : episode.status === "completed" ? (
-              <Feather name="check" size={14} color={Colors.dark.success} />
-            ) : (
-              <Feather name="unlock" size={14} color={Colors.dark.accent} />
-            )}
-          </View>
-        </View>
-
-        <ThemedText style={styles.episodeTitle}>{episode.title}</ThemedText>
-        <ThemedText
+        <Animated.View
           style={[
-            styles.episodeDescription,
-            episode.status === "locked" && styles.lockedText,
+            styles.card,
+            animatedBorderStyle,
+            episode.status === "locked" && styles.lockedCard,
+            isActive && styles.activeCard,
           ]}
         >
-          {episode.description}
-        </ThemedText>
+          <View style={styles.cardHeader}>
+            <View style={styles.numberContainer}>
+              <ThemedText style={styles.episodeNumber}>
+                {String(episode.number).padStart(2, "0")}
+              </ThemedText>
+            </View>
+            <View style={styles.statusBadge}>
+              {isActive ? (
+                <View style={styles.activePill}>
+                  <ThemedText style={styles.activePillText}>ACTIVE</ThemedText>
+                </View>
+              ) : episode.status === "locked" ? (
+                <Feather name="lock" size={14} color={Colors.dark.dimmed} />
+              ) : episode.status === "completed" ? (
+                <Feather name="check" size={14} color={Colors.dark.success} />
+              ) : (
+                <Feather name="unlock" size={14} color={Colors.dark.accent} />
+              )}
+            </View>
+          </View>
+
+          <ThemedText style={styles.episodeTitle}>{episode.title}</ThemedText>
+          <ThemedText
+            style={[
+              styles.episodeDescription,
+              episode.status === "locked" && styles.lockedText,
+            ]}
+          >
+            {episode.description}
+          </ThemedText>
+        </Animated.View>
       </Pressable>
     </Animated.View>
   );
@@ -77,26 +122,98 @@ function EpisodeCard({ episode }: { episode: Episode }) {
 
 export default function EpisodesScreen() {
   const [episodes, setEpisodes] = React.useState<Episode[]>([]);
+  const [selectedEpisode, setSelectedEpisode] = React.useState<Episode | null>(null);
+  const [activeEpisodeId, setActiveEpisodeId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     setEpisodes(episodeManager.getEpisodes());
+    const activeEpisode = episodeEngine.getActiveEpisode();
+    setActiveEpisodeId(activeEpisode?.episodeId || null);
   }, []);
 
-  return (
-    <ScreenScrollView contentContainerStyle={styles.container}>
-      <View style={styles.header}>
-        <ThemedText style={styles.headerTitle}>HAUNTS</ThemedText>
-        <ThemedText style={styles.headerSubtitle}>
-          Episodic manifestations
-        </ThemedText>
-      </View>
+  const handleEpisodePress = (episode: Episode) => {
+    if (episode.status === "available") {
+      setSelectedEpisode(episode);
+    }
+  };
 
-      <View style={styles.episodeList}>
-        {episodes.map((episode) => (
-          <EpisodeCard key={episode.id} episode={episode} />
-        ))}
-      </View>
-    </ScreenScrollView>
+  const handleStartEpisode = () => {
+    if (selectedEpisode) {
+      const success = episodeEngine.startEpisode(selectedEpisode.id);
+      if (success) {
+        setActiveEpisodeId(selectedEpisode.id);
+        setSelectedEpisode(null);
+      }
+    }
+  };
+
+  const handleCloseModal = () => {
+    setSelectedEpisode(null);
+  };
+
+  return (
+    <>
+      <ScreenScrollView contentContainerStyle={styles.container}>
+        <View style={styles.header}>
+          <ThemedText style={styles.headerTitle}>HAUNTS</ThemedText>
+          <ThemedText style={styles.headerSubtitle}>
+            Episodic manifestations
+          </ThemedText>
+        </View>
+
+        <View style={styles.episodeList}>
+          {episodes.map((episode) => (
+            <EpisodeCard
+              key={episode.id}
+              episode={episode}
+              isActive={activeEpisodeId === episode.id}
+              onPress={() => handleEpisodePress(episode)}
+            />
+          ))}
+        </View>
+      </ScreenScrollView>
+
+      <Modal
+        visible={selectedEpisode !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={handleCloseModal}
+      >
+        <Pressable style={styles.modalOverlay} onPress={handleCloseModal}>
+          <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.modalHeader}>
+              <ThemedText style={styles.modalTitle}>
+                {selectedEpisode?.title}
+              </ThemedText>
+              <Pressable onPress={handleCloseModal} style={styles.closeButton}>
+                <Feather name="x" size={24} color={Colors.dark.text} />
+              </Pressable>
+            </View>
+
+            <ThemedText style={styles.modalDescription}>
+              {selectedEpisode?.description}
+            </ThemedText>
+
+            {selectedEpisode?.teaser ? (
+              <ThemedText style={styles.modalTeaser}>
+                {selectedEpisode.teaser}
+              </ThemedText>
+            ) : null}
+
+            <View style={styles.modalActions}>
+              <Button
+                title="Begin Episode"
+                onPress={handleStartEpisode}
+                variant="primary"
+              />
+              <Pressable onPress={handleCloseModal} style={styles.cancelButton}>
+                <ThemedText style={styles.cancelButtonText}>Cancel</ThemedText>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </>
   );
 }
 
@@ -175,5 +292,76 @@ const styles = StyleSheet.create({
   },
   lockedText: {
     opacity: 0.6,
+  },
+  activeCard: {
+    borderWidth: 2,
+  },
+  activePill: {
+    backgroundColor: Colors.dark.accent,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.xs,
+  },
+  activePillText: {
+    fontSize: 10,
+    fontWeight: "700",
+    fontFamily: "monospace",
+    letterSpacing: 1,
+    color: Colors.dark.background,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.85)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: Spacing.xl,
+  },
+  modalContent: {
+    backgroundColor: Colors.dark.backgroundSecondary,
+    borderRadius: BorderRadius.sm,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+    padding: Spacing.xl,
+    gap: Spacing.lg,
+    width: "100%",
+    maxWidth: 500,
+    ...Shadows.medium,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+  modalTitle: {
+    fontSize: Typography.title.fontSize,
+    fontWeight: Typography.title.fontWeight,
+    letterSpacing: Typography.title.letterSpacing,
+    flex: 1,
+  },
+  closeButton: {
+    padding: Spacing.xs,
+    marginRight: -Spacing.xs,
+  },
+  modalDescription: {
+    fontSize: Typography.body.fontSize,
+    color: Colors.dark.dimmed,
+    fontStyle: "italic",
+  },
+  modalTeaser: {
+    fontSize: Typography.caption.fontSize,
+    color: Colors.dark.textSecondary,
+    lineHeight: 20,
+  },
+  modalActions: {
+    gap: Spacing.md,
+    marginTop: Spacing.md,
+  },
+  cancelButton: {
+    padding: Spacing.md,
+    alignItems: "center",
+  },
+  cancelButtonText: {
+    fontSize: Typography.body.fontSize,
+    color: Colors.dark.dimmed,
   },
 });

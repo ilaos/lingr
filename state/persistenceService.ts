@@ -6,6 +6,7 @@ const STORAGE_KEYS = {
   ENTITY_STATE: "@lingr/entity_state",
   EVIDENCE: "@lingr/evidence",
   EPISODES: "@lingr/episodes",
+  EPISODE_PROGRESS: "@lingr/episode_progress",
   CONTROL_SETTINGS: "@lingr/control_settings",
   APP_METADATA: "@lingr/app_metadata",
   SUMMON_EXCHANGES: "@lingr/summon_exchanges",
@@ -48,6 +49,19 @@ export interface EvidenceEntry {
 
 export interface EpisodesPersistedState {
   unlockedEpisodeIds: string[];
+  completedEpisodeIds: string[];
+}
+
+export interface EpisodeProgressState {
+  episodeId: string;
+  currentStepIndex: number;
+  startedAt: number;
+  completedAt?: number;
+  stepCompletedAt?: number;
+}
+
+export interface EpisodeProgressPersistedState {
+  activeEpisode: EpisodeProgressState | null;
   completedEpisodeIds: string[];
 }
 
@@ -171,6 +185,16 @@ class PersistenceService {
     return this.loadWithVersion<EpisodesPersistedState>(STORAGE_KEYS.EPISODES);
   }
 
+  async saveEpisodeProgress(state: EpisodeProgressPersistedState): Promise<void> {
+    await this.saveWithVersion(STORAGE_KEYS.EPISODE_PROGRESS, state);
+  }
+
+  async loadEpisodeProgress(): Promise<EpisodeProgressPersistedState | null> {
+    return this.loadWithVersion<EpisodeProgressPersistedState>(
+      STORAGE_KEYS.EPISODE_PROGRESS
+    );
+  }
+
   async saveControlSettings(settings: ControlPersistedSettings): Promise<void> {
     await this.saveWithVersion(STORAGE_KEYS.CONTROL_SETTINGS, settings);
   }
@@ -211,6 +235,7 @@ class PersistenceService {
         STORAGE_KEYS.ENTITY_STATE,
         STORAGE_KEYS.EVIDENCE,
         STORAGE_KEYS.EPISODES,
+        STORAGE_KEYS.EPISODE_PROGRESS,
         STORAGE_KEYS.APP_METADATA,
         STORAGE_KEYS.SUMMON_EXCHANGES,
         STORAGE_KEYS.ENVIRONMENT_DATA,

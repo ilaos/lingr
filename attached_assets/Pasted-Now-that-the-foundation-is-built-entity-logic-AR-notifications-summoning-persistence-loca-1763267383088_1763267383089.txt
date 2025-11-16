@@ -1,0 +1,243 @@
+Now that the foundation is built (entity logic → AR → notifications → summoning → persistence → location awareness), it’s time to activate the Episodes feature you mocked up visually.
+
+The goal of this phase:
+
+Turn each Episode into a mini-haunt: a lightweight, replayable story sequence made of triggers, events, and simple state progression.
+
+No heavy writing needed.
+No complex branching.
+Just subtle, eerie “chapters” the entity can guide the user through.
+
+This becomes LINGR’s story engine.
+
+1. Episode Engine (Core System)
+
+Create a new module:
+
+data/episodeEngine.ts
+
+It should:
+
+Track:
+
+current active episode (or null)
+
+current step index
+
+episode completion state
+
+Provide APIs:
+
+startEpisode(id)
+
+advanceStep()
+
+completeEpisode()
+
+getEpisodeState(id)
+
+getActiveEpisode()
+
+Episode progression should be:
+
+Linear (no branching yet)
+
+State-driven (based on triggers)
+
+Persisted (so episodes never reset unintentionally)
+
+2. Episode Data Structure
+
+Expand episodes.ts so each episode includes:
+
+{
+  id: string,
+  title: string,
+  description: string,
+  locked: boolean,
+  steps: EpisodeStep[]
+}
+
+
+Each EpisodeStep should support:
+
+{
+  id: string,
+  trigger: "open_app" | "scan" | "evidence_added" | "summon_message" | "timer" | "notification_sent",
+  condition?: { mood?: Mood[]; intensityAbove?: number; environment?: EnvironmentMode[] },
+  action: "show_message" | "toast" | "notification" | "auto_add_evidence" | "intensity_spike" | "spawn_apparition",
+  data: { ...payload },
+  waitSeconds?: number
+}
+
+
+This lets you build eerie “story beats” using existing elements:
+
+cryptic messages
+
+apparitions
+
+notifications
+
+evidence
+
+intensity
+
+summoning responses
+
+No new UI needed.
+
+3. Episode Runner
+
+Create a scheduler that:
+
+Listens for app-wide events (scan started, evidence added, summoning message sent, app opened)
+
+Checks:
+
+Is an episode active?
+
+What is the current step?
+
+Does the event match the step’s trigger?
+
+Are conditions satisfied?
+
+If yes:
+
+Execute the step’s action
+
+After any waitSeconds, auto-advance to the next step
+
+When final step is complete:
+
+Mark episode as completed
+
+Unlock the next one (if defined)
+
+This integrates cleanly with your existing event engines.
+
+4. Episode UI Integration
+
+Update the Episodes screen:
+
+Completed episodes should show a soft check mark or “Completed”
+
+Active episode should show a pulsing border or small “Active” pill
+
+Locked episodes already show lock icons
+
+When tapping an episode:
+
+If locked → show reason (evidence threshold, previous episode incomplete, etc.)
+
+If unlocked:
+
+Show a modal:
+
+Title, short description
+
+Button: “Begin Episode”
+
+Secondary link: “View Requirements” (small)
+
+Once started:
+
+The episode engine takes over silently (no new screens)
+
+5. Episode Content (You don’t need writing; Replit can procedurally create)
+
+Let Replit generate placeholder content.
+
+Example for Episode 1: First Contact
+
+Step 1
+Trigger: open_app
+Action: show_message
+Data: `"Something stirs…"
+
+Step 2
+Trigger: scan
+Condition: intensityAbove: 0.2
+Action: spawn_apparition
+
+Step 3
+Trigger: evidence_added
+Action: notification
+Data: "It remembers you."
+
+Step 4
+Trigger: timer
+WaitSeconds: 30
+Action: auto_add_evidence
+
+Step 5
+Trigger: summon_message
+Action: show_message
+Completion: "You opened the channel."
+
+Replit can fill the details automatically with the systems you’ve already built.
+
+6. Safety & Tone Requirements
+
+Episodes must:
+
+Never imply real-world danger
+
+Avoid specific locations
+
+Avoid threats
+
+Use surreal, atmospheric tone
+
+Episodes should feel like:
+
+“You experienced a haunting sequence.”
+
+Not:
+
+“Something is following you home.”
+
+7. Persistence Requirements
+
+Episodes MUST persist:
+
+active episode
+
+current step
+
+completed episodes
+
+Ensure episode completion unlocks the next one automatically.
+
+8. Out of Scope for Phase 8
+
+Do NOT implement:
+
+branching logic
+
+player choices
+
+voice-triggered episode steps
+
+timed multi-day stories
+
+cloud-hosted scripts
+
+downloadable DLC content
+
+This is version 1 of the mini-haunt engine only.
+
+Phase 8 Completion Checklist
+
+Episode engine exists and persists state
+
+Episode steps trigger correctly based on app-wide events
+
+At least 1 complete episode is playable (Episode 1)
+
+Completing Episode 1 unlocks Episode 2
+
+Episodes UI reflects active + completed + locked states
+
+All episode step actions use existing systems (messages, notifications, evidence, apparitions, intensity shifts)

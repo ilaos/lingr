@@ -78,6 +78,15 @@ Preferred communication style: Simple, everyday language.
 - Triggers haptic feedback on detection
 - Environment-aware probability modulation (60% reduction when AWAY, 30% when UNKNOWN)
 
+**Episode System** (Phase 8 - Story Engine):
+- **Episode Engine** (`data/episodeEngine.ts`): Core state manager tracking active episode, current step index, and completion state
+- **Episode Steps**: Linear progression system with triggers (open_app, scan, evidence_added, summon_message, timer, notification_sent) and actions (show_message, toast, notification, auto_add_evidence, intensity_spike, spawn_apparition)
+- **Episode Runner** (`hooks/useEpisodeRunner.ts`): Event-driven executor that listens to app-wide triggers, checks conditions (mood, intensity, environment), and executes step actions
+- **Episode Data** (`data/episodes.ts`): 8 episodes with atmospheric story beats, each comprising 2-7 steps using existing haunting systems
+- **Episode Persistence**: Active episode and completed episodes persist via AsyncStorage
+- **Episode Unlocking**: Completing an episode automatically unlocks the next episode if previous episode requirement is met
+- **Episodes UI** (`screens/EpisodesScreen.tsx`): Episode cards show active (pulsing border), completed (checkmark), and locked (lock icon) states with modal to start episodes
+
 ### Camera & AR Features
 
 **Camera Integration**: Expo Camera v17
