@@ -13,13 +13,29 @@ import Animated, {
 import { ThemedText } from "@/components/ThemedText";
 import { FloatingButton } from "@/components/FloatingButton";
 import { BackgroundGrain } from "@/components/BackgroundGrain";
+import { CameraView } from "@/components/CameraView";
+import { ApparitionOverlay } from "@/components/ApparitionOverlay";
 import { Colors, Spacing, Typography } from "@/constants/theme";
 import { useDetectorState } from "@/hooks/useDetectorState";
+import { useControlState } from "@/hooks/useControlState";
+
+const DEV_MODE = false;
 
 export default function DetectorScreen() {
   const insets = useSafeAreaInsets();
-  const { isScanning, isPresenceDetected, startScan, stopScan, capture } =
-    useDetectorState();
+  const { controls } = useControlState();
+  const {
+    isScanning,
+    isPresenceDetected,
+    apparitionVisible,
+    apparitionDuration,
+    toastMessage,
+    startScan,
+    stopScan,
+    capture,
+    forceApparition,
+    handleApparitionComplete,
+  } = useDetectorState(controls.camera);
 
   const scanLineY = useSharedValue(0);
   const distortionOpacity = useSharedValue(0);
@@ -106,7 +122,15 @@ export default function DetectorScreen() {
     <View style={styles.root}>
       <BackgroundGrain />
       <View style={styles.container}>
-        <View style={styles.cameraPlaceholder}>
+        <View style={styles.cameraContainer}>
+          <CameraView isActive={isScanning} cameraEnabled={controls.camera} />
+
+          <ApparitionOverlay
+            visible={apparitionVisible}
+            duration={apparitionDuration}
+            onComplete={handleApparitionComplete}
+          />
+
           {isPresenceDetected ? (
             <Animated.View style={[styles.flicker, flickerStyle]} />
           ) : null}
@@ -171,10 +195,22 @@ export default function DetectorScreen() {
             </ThemedText>
           </View>
 
+          {toastMessage ? (
+            <View style={styles.toastContainer}>
+              <View style={styles.toast}>
+                <ThemedText style={styles.toastText}>{toastMessage}</ThemedText>
+              </View>
+            </View>
+          ) : null}
+
           <View style={styles.bottomOverlay}>
-            <Pressable style={styles.closeButton} onPress={() => {}}>
-              <Feather name="x" size={24} color={Colors.dark.text} />
-            </Pressable>
+            {DEV_MODE ? (
+              <Pressable style={styles.devButton} onPress={forceApparition}>
+                <Feather name="zap" size={20} color={Colors.dark.warning} />
+              </Pressable>
+            ) : (
+              <View style={styles.spacer} />
+            )}
 
             <FloatingButton
               icon="aperture"
@@ -204,7 +240,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.dark.backgroundRoot,
   },
-  cameraPlaceholder: {
+  cameraContainer: {
     flex: 1,
     backgroundColor: "#000000",
     alignItems: "center",
@@ -291,6 +327,26 @@ const styles = StyleSheet.create({
   scanningTextAlert: {
     color: Colors.dark.warning,
   },
+  toastContainer: {
+    position: "absolute",
+    top: 120,
+    left: 0,
+    right: 0,
+    alignItems: "center",
+  },
+  toast: {
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+  },
+  toastText: {
+    fontSize: Typography.caption.fontSize,
+    color: Colors.dark.accent,
+    letterSpacing: Typography.caption.letterSpacing,
+  },
   bottomOverlay: {
     position: "absolute",
     bottom: Spacing["4xl"],
@@ -301,11 +357,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: Spacing["3xl"],
   },
-  closeButton: {
+  devButton: {
     width: 44,
     height: 44,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "rgba(255, 0, 0, 0.2)",
+    borderRadius: 22,
+  },
+  spacer: {
+    width: 44,
+    height: 44,
   },
   toggleButton: {
     width: 44,
