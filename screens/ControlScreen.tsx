@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { View, StyleSheet, Pressable, Alert } from "react-native";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedText } from "@/components/ThemedText";
@@ -8,11 +8,34 @@ import { BackgroundGrain } from "@/components/BackgroundGrain";
 import { Colors, Spacing, Typography, BorderRadius } from "@/constants/theme";
 import { useControlState } from "@/hooks/useControlState";
 import { usePresenceState } from "@/hooks/usePresenceState";
+import { notificationService } from "@/services/notificationService";
+import type { FrequencyLevel } from "@/data/ambientNotificationScheduler";
 
 export default function ControlScreen() {
   const { controls, updateControl, pausePresence, clearEvidence, removePresence } =
     useControlState();
   const { lastActivity, activityIntensity, mood } = usePresenceState();
+  const [notificationPermission, setNotificationPermission] = useState<boolean>(false);
+
+  useEffect(() => {
+    checkNotificationPermission();
+  }, []);
+
+  const checkNotificationPermission = async () => {
+    const canSend = await notificationService.canSendNotifications();
+    setNotificationPermission(canSend);
+  };
+
+  const handleRequestNotificationPermission = async () => {
+    const granted = await notificationService.requestNotificationPermission();
+    setNotificationPermission(granted);
+    if (!granted) {
+      Alert.alert(
+        "Permission Denied",
+        "Please enable notifications in your device settings to receive ambient contacts."
+      );
+    }
+  };
 
   const handlePausePress = () => {
     Alert.alert(
@@ -175,6 +198,79 @@ export default function ControlScreen() {
         <View style={styles.divider} />
 
         <View style={styles.section}>
+          <ThemedText style={styles.sectionTitle}>AMBIENT CONTACTS</ThemedText>
+          <ThemedText style={styles.sectionDescription}>
+            LINGR may occasionally send unsettling messages.{"\n"}
+            You can turn this off any time.
+          </ThemedText>
+
+          {!notificationPermission ? (
+            <Pressable
+              style={styles.permissionButton}
+              onPress={handleRequestNotificationPermission}
+            >
+              <ThemedText style={styles.permissionButtonText}>
+                Enable Notifications in System Settings
+              </ThemedText>
+            </Pressable>
+          ) : null}
+
+          <ControlToggle
+            label="Allow Ambient Notifications"
+            description="Enable scheduled ambient contacts"
+            value={controls.ambientNotifications}
+            onValueChange={(value) => updateControl("ambientNotifications", value)}
+            disabled={!controls.presenceActive || !notificationPermission}
+          />
+
+          <View style={styles.settingContainer}>
+            <ThemedText style={styles.settingLabel}>Frequency</ThemedText>
+            <View style={styles.frequencyOptions}>
+              {(["low", "normal", "high"] as FrequencyLevel[]).map((freq) => (
+                <Pressable
+                  key={freq}
+                  style={[
+                    styles.frequencyOption,
+                    controls.notificationFrequency === freq &&
+                      styles.frequencyOptionSelected,
+                  ]}
+                  onPress={() => updateControl("notificationFrequency", freq)}
+                  disabled={
+                    !controls.presenceActive ||
+                    !notificationPermission ||
+                    !controls.ambientNotifications
+                  }
+                >
+                  <ThemedText
+                    style={[
+                      styles.frequencyOptionText,
+                      controls.notificationFrequency === freq &&
+                        styles.frequencyOptionTextSelected,
+                    ]}
+                  >
+                    {freq === "low"
+                      ? "Low (1-2/day)"
+                      : freq === "normal"
+                        ? "Normal (3-5/day)"
+                        : "High (testing)"}
+                  </ThemedText>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.settingContainer}>
+            <ThemedText style={styles.settingLabel}>Quiet Hours</ThemedText>
+            <ThemedText style={styles.settingDescription}>
+              No notifications between {controls.quietHours.start} and{" "}
+              {controls.quietHours.end}
+            </ThemedText>
+          </View>
+        </View>
+
+        <View style={styles.divider} />
+
+        <View style={styles.section}>
           <ThemedText style={styles.sectionTitle}>SAFETY</ThemedText>
           <Pressable
             style={styles.actionButton}
@@ -284,5 +380,62 @@ const styles = StyleSheet.create({
     fontSize: Typography.caption.fontSize,
     color: Colors.dark.dimmed,
     textAlign: "center",
+  },
+  sectionDescription: {
+    fontSize: Typography.caption.fontSize,
+    color: Colors.dark.dimmed,
+    lineHeight: Typography.caption.fontSize * 1.5,
+  },
+  permissionButton: {
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.xl,
+    backgroundColor: Colors.dark.accent,
+    borderRadius: BorderRadius.xs,
+    alignItems: "center",
+  },
+  permissionButtonText: {
+    fontSize: Typography.body.fontSize,
+    fontWeight: "500",
+    color: Colors.dark.background,
+  },
+  settingContainer: {
+    gap: Spacing.sm,
+  },
+  settingLabel: {
+    fontSize: Typography.caption.fontSize,
+    fontWeight: Typography.caption.fontWeight,
+    color: Colors.dark.text,
+    letterSpacing: Typography.caption.letterSpacing,
+  },
+  settingDescription: {
+    fontSize: Typography.caption.fontSize,
+    color: Colors.dark.dimmed,
+  },
+  frequencyOptions: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+  },
+  frequencyOption: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.sm,
+    backgroundColor: Colors.dark.backgroundSecondary,
+    borderRadius: BorderRadius.xs,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+    alignItems: "center",
+  },
+  frequencyOptionSelected: {
+    borderColor: Colors.dark.accent,
+    backgroundColor: `${Colors.dark.accent}15`,
+  },
+  frequencyOptionText: {
+    fontSize: Typography.caption.fontSize,
+    color: Colors.dark.dimmed,
+    textAlign: "center",
+  },
+  frequencyOptionTextSelected: {
+    color: Colors.dark.accent,
+    fontWeight: "500",
   },
 });

@@ -1,4 +1,10 @@
 import { useState } from "react";
+import type { FrequencyLevel } from "@/data/ambientNotificationScheduler";
+
+interface QuietHours {
+  start: string;
+  end: string;
+}
 
 interface Controls {
   presenceActive: boolean;
@@ -8,6 +14,9 @@ interface Controls {
   cameraManifestations: boolean;
   location: boolean;
   publicSpaceBehavior: boolean;
+  ambientNotifications: boolean;
+  notificationFrequency: FrequencyLevel;
+  quietHours: QuietHours;
 }
 
 export function useControlState() {
@@ -19,9 +28,12 @@ export function useControlState() {
     cameraManifestations: true,
     location: false,
     publicSpaceBehavior: true,
+    ambientNotifications: false,
+    notificationFrequency: "normal",
+    quietHours: { start: "23:00", end: "07:00" },
   });
 
-  const updateControl = (key: keyof Controls, value: boolean) => {
+  const updateControl = (key: keyof Controls, value: boolean | FrequencyLevel | QuietHours) => {
     setControls((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -43,6 +55,9 @@ export function useControlState() {
       cameraManifestations: false,
       location: false,
       publicSpaceBehavior: false,
+      ambientNotifications: false,
+      notificationFrequency: "normal",
+      quietHours: { start: "23:00", end: "07:00" },
     });
   };
 
