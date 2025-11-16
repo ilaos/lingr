@@ -1,32 +1,23 @@
 import { useState, useEffect } from "react";
 import { MoodType } from "@/components/EntityMood";
+import { entityEngine } from "@/data/entityEngine";
+import { messageSystem } from "@/data/messages";
 
 interface Entity {
   name: string;
   message: string;
 }
 
-const CRYPTIC_MESSAGES = [
-  "It watches... waiting in the spaces between moments.",
-  "The boundary thins when you're not looking.",
-  "Have you checked the shadows lately?",
-  "Time moves differently here now.",
-  "Your device remembers things you've forgotten.",
-  "Something shifted while you were away.",
-  "The static hides more than silence.",
-  "It knows your patterns now.",
-];
-
 export function usePresenceState() {
   const [entity] = useState<Entity>({
     name: "Unknown",
-    message: CRYPTIC_MESSAGES[0],
+    message: "",
   });
 
   const [lastActivity, setLastActivity] = useState<string>("");
   const [activityIntensity, setActivityIntensity] = useState<number>(0.3);
   const [mood, setMood] = useState<MoodType>("restless");
-  const [messageIndex, setMessageIndex] = useState(0);
+  const [message, setMessage] = useState<string>("");
 
   useEffect(() => {
     const updateTimestamp = () => {
@@ -40,23 +31,24 @@ export function usePresenceState() {
     updateTimestamp();
     const timestampInterval = setInterval(updateTimestamp, 1000);
 
-    const intensityInterval = setInterval(() => {
-      const newIntensity = Math.random() * 0.6 + 0.2;
-      setActivityIntensity(newIntensity);
-
-      if (newIntensity < 0.3) setMood("dormant");
-      else if (newIntensity < 0.5) setMood("restless");
-      else if (newIntensity < 0.7) setMood("active");
-      else setMood("agitated");
-    }, 8000);
+    const stateInterval = setInterval(() => {
+      const state = entityEngine.getState();
+      setActivityIntensity(state.intensity);
+      setMood(state.mood);
+    }, 1000);
 
     const messageInterval = setInterval(() => {
-      setMessageIndex((prev) => (prev + 1) % CRYPTIC_MESSAGES.length);
-    }, 20000);
+      const currentMood = entityEngine.getMood();
+      const newMessage = messageSystem.getMessage(currentMood);
+      setMessage(newMessage);
+    }, 25000);
+
+    const initialMessage = messageSystem.getMessage(entityEngine.getMood());
+    setMessage(initialMessage);
 
     return () => {
       clearInterval(timestampInterval);
-      clearInterval(intensityInterval);
+      clearInterval(stateInterval);
       clearInterval(messageInterval);
     };
   }, []);
@@ -64,7 +56,7 @@ export function usePresenceState() {
   return {
     entity: {
       ...entity,
-      message: CRYPTIC_MESSAGES[messageIndex],
+      message,
     },
     lastActivity,
     activityIntensity,

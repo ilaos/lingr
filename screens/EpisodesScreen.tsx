@@ -9,38 +9,7 @@ import Animated, {
   withSpring,
 } from "react-native-reanimated";
 import { Colors, Spacing, Typography, BorderRadius, Shadows } from "@/constants/theme";
-
-interface Episode {
-  id: string;
-  number: number;
-  title: string;
-  status: "locked" | "available" | "completed";
-  description: string;
-}
-
-const EPISODES: Episode[] = [
-  {
-    id: "1",
-    number: 1,
-    title: "First Contact",
-    status: "available",
-    description: "Something has attached itself to your device...",
-  },
-  {
-    id: "2",
-    number: 2,
-    title: "The Watcher",
-    status: "locked",
-    description: "It knows when you're watching back.",
-  },
-  {
-    id: "3",
-    number: 3,
-    title: "Echoes",
-    status: "locked",
-    description: "Fragments of something that was never alive.",
-  },
-];
+import { Episode, episodeManager } from "@/data/episodes";
 
 function EpisodeCard({ episode }: { episode: Episode }) {
   const scale = useSharedValue(1);
@@ -107,6 +76,12 @@ function EpisodeCard({ episode }: { episode: Episode }) {
 }
 
 export default function EpisodesScreen() {
+  const [episodes, setEpisodes] = React.useState<Episode[]>([]);
+
+  React.useEffect(() => {
+    setEpisodes(episodeManager.getEpisodes());
+  }, []);
+
   return (
     <ScreenScrollView contentContainerStyle={styles.container}>
       <View style={styles.header}>
@@ -117,7 +92,7 @@ export default function EpisodesScreen() {
       </View>
 
       <View style={styles.episodeList}>
-        {EPISODES.map((episode) => (
+        {episodes.map((episode) => (
           <EpisodeCard key={episode.id} episode={episode} />
         ))}
       </View>
