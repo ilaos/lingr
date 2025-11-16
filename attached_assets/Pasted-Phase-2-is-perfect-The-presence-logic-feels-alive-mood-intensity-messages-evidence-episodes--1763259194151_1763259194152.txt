@@ -1,0 +1,170 @@
+Phase 2 is perfect. The presence logic feels alive — mood, intensity, messages, evidence, episodes.
+
+For Phase 3, do NOT change the visual design system.
+Keep all existing screens, styles, and animations.
+
+Now we focus on making the Detector screen actually feel like a camera-based AR haunting with real evidence capture.
+
+1. Replace Fake Background With Live Camera Feed
+
+On the Detector screen:
+
+Use the appropriate Expo/React Native camera component to show a live camera feed behind the existing UI overlays.
+
+Keep:
+
+reticle
+
+scan lines
+
+status text
+
+capture button
+
+atmospheric effects (flicker, warnings)
+
+Make sure:
+
+camera permission is requested in a consentful way
+
+if permission is denied, show a clean “Camera unavailable” state with explanation rather than breaking
+
+The look should still match the current aesthetic: dark overlays, subtle glow, slow animation.
+
+2. Apparition Flash System (Visual Only)
+
+Create a lightweight “apparition flash” system:
+
+When user is scanning (Detector open), occasionally trigger an apparition event:
+
+A barely-visible silhouette or glitch overlay appears for 100–400 ms
+
+It should be subtle and easy to miss
+
+Use a purple-tinted, noisy silhouette or glitch image layered over the camera, with low opacity and quick fade
+
+Apparitions should:
+
+Appear more often when entity intensity is high
+
+Almost never appear when the entity is Dormant
+
+Never loop constantly; they must feel rare and surprising
+
+Apparitions = pure front-end visuals for now — no real-world mapping needed.
+
+3. Evidence Capture Integration
+
+Tie the Detector into the evidence system built in Phase 2:
+
+When:
+
+user taps the Capture button OR
+
+an apparition event occurs
+
+Create an evidence entry via the existing evidence API:
+
+type: "AR_CAPTURE" or "ANOMALY"
+
+timestamp: now
+
+description: pick from the existing AR/Anomaly description pools
+
+optional field: source: "detector"
+
+The Evidence Locker should immediately show these new items.
+
+Also:
+
+Add a small toast or micro-feedback on capture like:
+
+“Anomaly recorded.”
+
+“Trace logged.”
+
+This should be subtle, not game-y.
+
+4. Detector → Entity Interaction
+
+Make the Detector feel like it affects the entity:
+
+When the user spends time scanning:
+
+Slight chance to increase intensity
+
+Slight chance to shift mood upward (e.g., Dormant → Restless / Restless → Active)
+
+When the user captures evidence:
+
+Trigger a small intensity spike
+
+Optionally log an internal “interaction count” for later use (e.g., unlock episodes)
+
+All of this should plug into the existing Phase 2 engine:
+
+use entityEngine + eventsScheduler instead of duplicating logic.
+
+5. Controls & Safety
+
+In the Control / Settings screen, add:
+
+A toggle: “Allow camera manifestations”
+
+When off:
+
+Detector uses a static dark background or subtle animation instead of camera
+
+Apparitions do not show
+
+But the rest of the app remains functional
+
+Keep language calm and clear:
+
+No guilt-tripping for disabling AR.
+
+6. Dev / Debug Tools for Detector (Non-user Facing)
+
+For development only (can be behind a constant flag):
+
+Add a hidden “Force Apparition” button or gesture:
+
+Instantly triggers an apparition overlay and an AR_CAPTURE evidence entry
+
+Optionally log apparition triggers in the console for validation
+
+This will help test the system without waiting for random probability.
+
+7. What NOT to Implement Yet
+
+To keep scope clean, do NOT implement:
+
+True world-anchored AR (planes, depth, SLAM, etc.)
+
+3D models
+
+External storage for captured frames
+
+Background camera use when app is closed
+
+Any real face recognition or environment analysis
+
+All apparitions should be simple overlay effects for now.
+
+8. Completion Checklist for Phase 3
+
+Phase 3 is complete when:
+
+Detector uses a real camera feed (with graceful fallback when denied)
+
+Apparitions can appear randomly while scanning (intensity-weighted)
+
+User can tap Capture to log evidence entries
+
+Evidence Locker displays Detector evidence
+
+Detector activity slightly influences mood/intensity
+
+“Allow camera manifestations” toggle works and disables visual AR behavior
+
+Once Phase 3 is done, I’ll give direction for Phase 4 – Ambient Notification Scares & Schedules, using the existing eventsScheduler as the backbone.
