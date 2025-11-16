@@ -274,6 +274,26 @@ export default function ControlScreen() {
               {controls.quietHours.end}
             </ThemedText>
           </View>
+
+          {__DEV__ && controls.ambientNotifications && notificationPermission ? (
+            <Pressable
+              style={styles.devButton}
+              onPress={async () => {
+                const { ambientNotificationScheduler } = await import(
+                  "@/data/ambientNotificationScheduler"
+                );
+                await ambientNotificationScheduler.sendTestNotification();
+                Alert.alert(
+                  "Test Scheduled",
+                  "A test notification will appear in 2 seconds."
+                );
+              }}
+            >
+              <ThemedText style={styles.devButtonText}>
+                Send Test Notification (Dev)
+              </ThemedText>
+            </Pressable>
+          ) : null}
         </View>
 
         <View style={styles.divider} />
@@ -444,6 +464,20 @@ const styles = StyleSheet.create({
   },
   frequencyOptionTextSelected: {
     color: Colors.dark.accent,
+    fontWeight: "500",
+  },
+  devButton: {
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    backgroundColor: `${Colors.dark.warning}20`,
+    borderRadius: BorderRadius.xs,
+    borderWidth: 1,
+    borderColor: Colors.dark.warning,
+    alignItems: "center",
+  },
+  devButtonText: {
+    fontSize: Typography.caption.fontSize,
+    color: Colors.dark.warning,
     fontWeight: "500",
   },
 });
