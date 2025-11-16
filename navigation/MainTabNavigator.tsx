@@ -3,13 +3,18 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { Platform, StyleSheet } from "react-native";
-import HomeStackNavigator from "@/navigation/HomeStackNavigator";
-import ProfileStackNavigator from "@/navigation/ProfileStackNavigator";
+import PresenceScreen from "@/screens/PresenceScreen";
+import EvidenceScreen from "@/screens/EvidenceScreen";
+import DetectorScreen from "@/screens/DetectorScreen";
+import ControlScreen from "@/screens/ControlScreen";
 import { useTheme } from "@/hooks/useTheme";
+import { HeaderTitle } from "@/components/HeaderTitle";
 
 export type MainTabParamList = {
-  HomeTab: undefined;
-  ProfileTab: undefined;
+  Presence: undefined;
+  Evidence: undefined;
+  Detector: undefined;
+  Control: undefined;
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -19,7 +24,7 @@ export default function MainTabNavigator() {
 
   return (
     <Tab.Navigator
-      initialRouteName="HomeTab"
+      initialRouteName="Presence"
       screenOptions={{
         tabBarActiveTintColor: theme.tabIconSelected,
         tabBarInactiveTintColor: theme.tabIconDefault,
@@ -36,30 +41,61 @@ export default function MainTabNavigator() {
           Platform.OS === "ios" ? (
             <BlurView
               intensity={100}
-              tint={isDark ? "dark" : "light"}
+              tint="dark"
               style={StyleSheet.absoluteFill}
             />
           ) : null,
-        headerShown: false,
+        headerShown: true,
+        headerTransparent: true,
+        headerTitleAlign: "center",
+        headerTintColor: theme.text,
+        headerStyle: {
+          backgroundColor: Platform.select({
+            ios: undefined,
+            android: theme.backgroundRoot,
+          }),
+        },
       }}
     >
       <Tab.Screen
-        name="HomeTab"
-        component={HomeStackNavigator}
+        name="Presence"
+        component={PresenceScreen}
         options={{
-          title: "Home",
+          headerTitle: () => <HeaderTitle title="LINGR" />,
+          headerRight: () => null,
           tabBarIcon: ({ color, size }) => (
-            <Feather name="home" size={size} color={color} />
+            <Feather name="activity" size={size} color={color} />
           ),
         }}
       />
       <Tab.Screen
-        name="ProfileTab"
-        component={ProfileStackNavigator}
+        name="Evidence"
+        component={EvidenceScreen}
         options={{
-          title: "Profile",
+          title: "EVIDENCE",
           tabBarIcon: ({ color, size }) => (
-            <Feather name="user" size={size} color={color} />
+            <Feather name="folder" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Detector"
+        component={DetectorScreen}
+        options={{
+          headerShown: false,
+          title: "DETECT",
+          tabBarIcon: ({ color, size }) => (
+            <Feather name="camera" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Control"
+        component={ControlScreen}
+        options={{
+          title: "CONTROL CENTER",
+          tabBarIcon: ({ color, size }) => (
+            <Feather name="sliders" size={size} color={color} />
           ),
         }}
       />

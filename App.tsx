@@ -18,7 +18,7 @@ export default function App() {
             <NavigationContainer>
               <MainTabNavigator />
             </NavigationContainer>
-            <StatusBar style="auto" />
+            <StatusBar style="light" />
           </KeyboardProvider>
         </GestureHandlerRootView>
       </SafeAreaProvider>
