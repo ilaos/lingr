@@ -8,9 +8,93 @@ import { EntityMood } from "@/components/EntityMood";
 import { BackgroundGrain } from "@/components/BackgroundGrain";
 import { Colors, Spacing, Typography } from "@/constants/theme";
 import { usePresenceState } from "@/hooks/usePresenceState";
+import { persistenceService, type AppMetadata } from "@/state/persistenceService";
+import { evidenceStore } from "@/data/evidence";
+
+function formatTimeSince(ms: number): string {
+  const seconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (days > 0) return `${days}d ${hours % 24}h ago`;
+  if (hours > 0) return `${hours}h ${minutes % 60}m ago`;
+  if (minutes > 0) return `${minutes}m ago`;
+  return "moments ago";
+}
+
+function LastKnownStateCard({ metadata, currentMood }: { metadata: AppMetadata; currentMood: string }) {
+  const now = Date.now();
+  const timeSince = now - metadata.lastOpenedAt;
+  const evidenceAdded = evidenceStore.getEvidenceCount() - metadata.lastEvidenceCount;
+  const moodChanged = metadata.lastMood !== currentMood;
+
+  if (timeSince < 60000) {
+    return null;
+  }
+
+  let atmosphericMessage = "The air hasn't settled since you left.";
+  if (moodChanged && currentMood === "agitated") {
+    atmosphericMessage = "It grew restless in your absence.";
+  } else if (moodChanged && currentMood === "dormant") {
+    atmosphericMessage = "Something calmed while you were away.";
+  } else if (evidenceAdded > 5) {
+    atmosphericMessage = "Activity continued without witness.";
+  } else if (timeSince > 86400000) {
+    atmosphericMessage = "The presence lingered, waiting.";
+  }
+
+  return (
+    <View style={styles.lastKnownCard}>
+      <ThemedText style={styles.lastKnownTitle}>LAST KNOWN STATE</ThemedText>
+      <View style={styles.lastKnownContent}>
+        <View style={styles.lastKnownRow}>
+          <ThemedText style={styles.lastKnownLabel}>Last activity</ThemedText>
+          <ThemedText style={styles.lastKnownValue}>
+            {formatTimeSince(timeSince)}
+          </ThemedText>
+        </View>
+
+        {evidenceAdded > 0 ? (
+          <View style={styles.lastKnownRow}>
+            <ThemedText style={styles.lastKnownLabel}>Evidence added</ThemedText>
+            <ThemedText style={styles.lastKnownValue}>+{evidenceAdded}</ThemedText>
+          </View>
+        ) : null}
+
+        {moodChanged ? (
+          <View style={styles.lastKnownRow}>
+            <ThemedText style={styles.lastKnownLabel}>Mood changed</ThemedText>
+            <ThemedText style={[styles.lastKnownValue, styles.lastKnownMood]}>
+              {metadata.lastMood} → {currentMood}
+            </ThemedText>
+          </View>
+        ) : null}
+
+        <View style={styles.atmosphericMessageContainer}>
+          <ThemedText style={styles.atmosphericMessage}>
+            "{atmosphericMessage}"
+          </ThemedText>
+        </View>
+      </View>
+    </View>
+  );
+}
 
 export default function PresenceScreen() {
   const { entity, lastActivity, activityIntensity, mood } = usePresenceState();
+  const [lastKnownState, setLastKnownState] = React.useState<AppMetadata | null>(null);
+
+  React.useEffect(() => {
+    const loadLastKnownState = async () => {
+      const metadata = await persistenceService.loadAppMetadata();
+      if (metadata) {
+        setLastKnownState(metadata);
+      }
+    };
+
+    loadLastKnownState();
+  }, []);
 
   return (
     <View style={styles.root}>
@@ -37,6 +121,10 @@ export default function PresenceScreen() {
           <View style={styles.messageContainer}>
             <ThemedText style={styles.message}>{entity.message}</ThemedText>
           </View>
+
+          {lastKnownState ? (
+            <LastKnownStateCard metadata={lastKnownState} currentMood={mood} />
+          ) : null}
         </View>
       </ScreenScrollView>
     </View>
@@ -89,5 +177,54 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
     color: Colors.dark.text,
     lineHeight: 24,
+  },
+  lastKnownCard: {
+    marginTop: Spacing["2xl"],
+    padding: Spacing.lg,
+    backgroundColor: Colors.dark.backgroundSecondary,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+    gap: Spacing.md,
+  },
+  lastKnownTitle: {
+    fontSize: Typography.caption.fontSize,
+    fontWeight: Typography.caption.fontWeight,
+    color: Colors.dark.dimmed,
+    letterSpacing: Typography.caption.letterSpacing,
+  },
+  lastKnownContent: {
+    gap: Spacing.sm,
+  },
+  lastKnownRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: Spacing.xs,
+  },
+  lastKnownLabel: {
+    fontSize: Typography.caption.fontSize,
+    color: Colors.dark.dimmed,
+  },
+  lastKnownValue: {
+    fontSize: Typography.caption.fontSize,
+    color: Colors.dark.text,
+    fontFamily: "monospace",
+  },
+  lastKnownMood: {
+    color: Colors.dark.accent,
+    textTransform: "uppercase",
+  },
+  atmosphericMessageContainer: {
+    marginTop: Spacing.md,
+    paddingTop: Spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: Colors.dark.border,
+  },
+  atmosphericMessage: {
+    fontSize: Typography.caption.fontSize,
+    fontStyle: "italic",
+    color: Colors.dark.dimmed,
+    lineHeight: 18,
   },
 });

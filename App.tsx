@@ -11,24 +11,62 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { eventsScheduler } from "@/data/eventsScheduler";
 import { ambientNotificationScheduler } from "@/data/ambientNotificationScheduler";
 import { notificationService } from "@/services/notificationService";
+import { entityEngine } from "@/data/entityEngine";
+import { evidenceStore } from "@/data/evidence";
+import { episodeManager } from "@/data/episodes";
+import { persistenceService } from "@/state/persistenceService";
 
 export default function App() {
   React.useEffect(() => {
-    eventsScheduler.start();
+    const initializeApp = async () => {
+      await entityEngine.initialize();
+      await evidenceStore.initialize();
+      await episodeManager.initialize();
 
-    const initializeNotifications = async () => {
+      eventsScheduler.start();
+
       await ambientNotificationScheduler.initialize(
         false,
         "normal",
         { start: "23:00", end: "07:00" }
       );
+
+      if (__DEV__) {
+        console.log("[App] Persistence systems initialized");
+      }
+
+      setTimeout(async () => {
+        await persistenceService.saveAppMetadata({
+          lastOpenedAt: Date.now(),
+          lastEvidenceCount: evidenceStore.getEvidenceCount(),
+          lastMood: entityEngine.getMood(),
+        });
+
+        if (__DEV__) {
+          console.log("[App] Saved initial app metadata after delay");
+        }
+      }, 3000);
     };
 
-    initializeNotifications();
+    initializeApp();
 
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
       if (nextAppState === "active") {
         ambientNotificationScheduler.checkAndRescheduleIfNewDay();
+      } else if (nextAppState === "background" || nextAppState === "inactive") {
+        const saveMetadata = async () => {
+          await persistenceService.saveAppMetadata({
+            lastOpenedAt: Date.now(),
+            lastEvidenceCount: evidenceStore.getEvidenceCount(),
+            lastMood: entityEngine.getMood(),
+          });
+
+          if (__DEV__) {
+            console.log("[App] Saved app metadata on background");
+          }
+        };
+
+        saveMetadata();
       }
     };
 

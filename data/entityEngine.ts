@@ -1,4 +1,8 @@
 import { MoodType } from "@/components/EntityMood";
+import {
+  persistenceService,
+  type EntityPersistedState,
+} from "@/state/persistenceService";
 
 export interface EntityState {
   mood: MoodType;
@@ -7,6 +11,10 @@ export interface EntityState {
   lastIntensityChange: number;
   cooldownUntil: number;
   personality: EntityPersonality;
+  scanCount: number;
+  detectionCount: number;
+  interactionCount: number;
+  lastActivityAt: number;
 }
 
 export interface EntityPersonality {
@@ -53,12 +61,64 @@ class EntityEngine {
     lastIntensityChange: Date.now(),
     cooldownUntil: 0,
     personality: DEFAULT_PERSONALITY,
+    scanCount: 0,
+    detectionCount: 0,
+    interactionCount: 0,
+    lastActivityAt: Date.now(),
   };
 
   private moodTimer: NodeJS.Timeout | null = null;
   private intensityTimer: NodeJS.Timeout | null = null;
+  private isInitialized: boolean = false;
 
-  constructor() {
+  async initialize(): Promise<void> {
+    if (this.isInitialized) return;
+
+    const saved = await persistenceService.loadEntityState();
+
+    if (saved) {
+      const now = Date.now();
+      const timeSinceLastActivity = now - saved.lastActivityAt;
+      const fortyEightHours = 48 * 60 * 60 * 1000;
+
+      if (timeSinceLastActivity > fortyEightHours) {
+        const decayFactor = Math.min(
+          1,
+          (timeSinceLastActivity - fortyEightHours) / fortyEightHours
+        );
+        saved.intensity = Math.max(
+          0.15,
+          saved.intensity * (1 - decayFactor * 0.4)
+        );
+
+        if (__DEV__) {
+          console.log(
+            `[EntityEngine] State aged ${Math.floor(timeSinceLastActivity / (1000 * 60 * 60))}hrs, intensity decayed to ${saved.intensity.toFixed(2)}`
+          );
+        }
+      }
+
+      this.state = {
+        mood: saved.mood,
+        intensity: saved.intensity,
+        lastMoodChange: now,
+        lastIntensityChange: now,
+        cooldownUntil: 0,
+        personality: saved.personality,
+        scanCount: saved.scanCount,
+        detectionCount: saved.detectionCount,
+        interactionCount: saved.interactionCount,
+        lastActivityAt: now,
+      };
+
+      if (__DEV__) {
+        console.log(
+          `[EntityEngine] Restored state: mood=${saved.mood}, intensity=${saved.intensity.toFixed(2)}, scans=${saved.scanCount}`
+        );
+      }
+    }
+
+    this.isInitialized = true;
     this.scheduleMoodChange();
     this.scheduleIntensityFluctuation();
   }
@@ -105,6 +165,7 @@ class EntityEngine {
     if (now < this.state.cooldownUntil) {
       this.state.intensity = Math.max(0.1, this.state.intensity * 0.95);
       this.state.mood = this.getMoodFromIntensity(this.state.intensity);
+      this.saveState();
       return;
     }
 
@@ -122,10 +183,13 @@ class EntityEngine {
 
     this.state.mood = this.getMoodFromIntensity(this.state.intensity);
     this.state.lastMoodChange = now;
+    this.state.lastActivityAt = now;
 
     if (this.state.intensity > 0.85 && Math.random() < 0.2) {
       this.enterCooldown();
     }
+
+    this.saveState();
   }
 
   private fluctuateIntensity(): void {
@@ -133,6 +197,7 @@ class EntityEngine {
 
     if (now < this.state.cooldownUntil) {
       this.state.intensity = Math.max(0.1, this.state.intensity * 0.98);
+      this.saveState();
       return;
     }
 
@@ -149,7 +214,10 @@ class EntityEngine {
     }
 
     this.state.lastIntensityChange = now;
+    this.state.lastActivityAt = now;
     this.state.mood = this.getMoodFromIntensity(this.state.intensity);
+
+    this.saveState();
   }
 
   private enterCooldown(): void {
@@ -182,6 +250,46 @@ class EntityEngine {
 
     this.state.intensity = Math.min(0.95, this.state.intensity + amount);
     this.state.mood = this.getMoodFromIntensity(this.state.intensity);
+    this.state.interactionCount++;
+    this.state.lastActivityAt = Date.now();
+
+    this.saveState();
+  }
+
+  public recordScan(): void {
+    this.state.scanCount++;
+    this.state.lastActivityAt = Date.now();
+    this.saveState();
+  }
+
+  public recordDetection(): void {
+    this.state.detectionCount++;
+    this.state.lastActivityAt = Date.now();
+    this.saveState();
+  }
+
+  public getScanCount(): number {
+    return this.state.scanCount;
+  }
+
+  public getDetectionCount(): number {
+    return this.state.detectionCount;
+  }
+
+  public getInteractionCount(): number {
+    return this.state.interactionCount;
+  }
+
+  private saveState(): void {
+    persistenceService.debouncedSaveEntityState(() => ({
+      mood: this.state.mood,
+      intensity: this.state.intensity,
+      lastActivityAt: this.state.lastActivityAt,
+      personality: this.state.personality,
+      scanCount: this.state.scanCount,
+      detectionCount: this.state.detectionCount,
+      interactionCount: this.state.interactionCount,
+    }));
   }
 
   public setPersonality(personality: Partial<EntityPersonality>): void {

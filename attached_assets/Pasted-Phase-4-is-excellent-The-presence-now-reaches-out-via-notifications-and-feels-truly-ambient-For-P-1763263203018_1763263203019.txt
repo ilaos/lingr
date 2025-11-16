@@ -1,0 +1,194 @@
+Phase 4 is excellent. The presence now reaches out via notifications and feels truly ambient.
+
+For Phase 5, don’t change the visual design at all. We’re adding persistence and memory so LINGR feels continuous instead of resetting every time the app restarts.
+
+We want three things:
+
+Persistent entity & app state
+
+Persistent evidence & episodes
+
+A “Last Known State” experience on the Presence screen
+
+Use AsyncStorage (or the existing storage solution you used for notifications) as the persistence layer.
+
+1. Persistent Entity State
+
+Create a small state/persistenceService.ts that centralizes load/save of app state.
+
+Extend the entity system so these values are saved and restored:
+
+current mood
+
+current intensity
+
+last activity timestamp
+
+personality traits (if randomized)
+
+any long-lived flags (e.g. interaction counters, number of scans, etc.)
+
+Behavior:
+
+On app start:
+
+Load persisted entity state (if it exists)
+
+If it’s older than a reasonable threshold (e.g. 48 hours), you can softly decay intensity a bit, but do not hard reset to Dormant unless necessary
+
+On entity changes (intensity, mood, key events):
+
+Save updated state to storage (debounced so we don’t write constantly)
+
+Keep this logic in the existing entityEngine rather than scattering save calls everywhere.
+
+2. Persistent Evidence & Episodes
+Evidence
+
+Update the existing evidence data layer so:
+
+Evidence entries are saved to storage
+
+On startup, evidence is restored and shown in the Evidence Locker
+
+Respect the existing cap (100 entries) both in memory and persisted
+
+When the user clears evidence (if there’s a clear action):
+
+Wipe from memory and from storage
+
+Episodes
+
+Update the episodes system so:
+
+Unlock states (which episodes are available/completed) are saved
+
+Progress conditions (e.g. episode 1 completed) persist across sessions
+
+On startup, the episodes UI reflects the persisted unlock/completion states
+
+You can store only:
+
+unlockedEpisodeIds: string[]
+
+completedEpisodeIds: string[]
+
+And recompute the rest.
+
+3. Persistent Settings
+
+You already have persistence for some notification data; expand it to cover all user-facing controls that matter, including:
+
+Master haunting on/off
+
+Camera manifestations toggle
+
+Ambient notifications on/off
+
+Notification frequency level
+
+Quiet hours
+
+Any other major toggles in Control Center (e.g. AR, haptics, location when those exist)
+
+Behavior:
+
+On app start, load settings and apply:
+
+Reconfigure schedulers (notifications, events) according to stored settings
+
+Respect opt-out states and never re-enable things automatically
+
+On setting change:
+
+Save to storage and reconfigure systems
+
+Make sure every toggle in the Control UI is actually backed by persisted state so the app feels consistent between launches.
+
+4. “Last Known State” on Presence Screen
+
+Enhance the Presence screen to reflect continuity:
+
+Add a small “Last Known State” section/card that appears when:
+
+The app loads and finds previous state
+
+OR the user has been away for more than a few minutes
+
+Content suggestions (you can implement with your own copy):
+
+“Last activity: [timestamp]”
+
+“While you were away:” with:
+
+total evidence added since last open
+
+mood at last shutdown vs current mood (if it changed)
+
+maybe a single short line like:
+
+“The air hasn’t settled since you left.”
+
+“It stayed restless in your absence.”
+
+Implementation details:
+
+Track a lastOpenedAt timestamp in storage
+
+On app start:
+
+Compute time since last open
+
+Compute how many evidence entries occurred since lastOpenedAt
+
+Display a subtle summary card (not a modal) near the bottom of Presence
+
+After displaying:
+
+Update lastOpenedAt to now
+
+Keep this visually subtle and in-theme, not like a “gamified recap”.
+
+5. Data Versioning & Safety
+
+Add a very lightweight versioning approach to your saved state, e.g.:
+
+Store a STATE_VERSION alongside the root state object
+
+If the stored version doesn’t match the current app version:
+
+Fail gracefully: ignore incompatible parts or reset to safe defaults
+
+Avoid crashes due to old schema
+
+This doesn’t need to be complex, just enough to avoid future issues.
+
+6. Out of Scope for Phase 5
+
+Do not implement:
+
+Cloud sync
+
+User accounts
+
+Cross-device syncing
+
+Encrypted at-rest storage (for now; this can be future work)
+
+Simple local persistence is enough for this phase.
+
+Phase 5 Completion Checklist
+
+Phase 5 is complete when:
+
+Entity mood/intensity and last activity are restored between app runs
+
+Evidence and episodes progress persist correctly
+
+Control Center settings persist and are applied at startup
+
+Ambient notifications and entity/event schedulers honor the restored settings
+
+Presence screen shows a “Last Known State” / “While you were away” style summary after relaunch
+
+Old state is handled safely via simple version checks / guards

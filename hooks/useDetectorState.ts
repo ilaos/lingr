@@ -113,6 +113,7 @@ export function useDetectorState(cameraEnabled: boolean, manifestationsEnabled: 
 
   const startScan = () => {
     setIsScanning(true);
+    entityEngine.recordScan();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
@@ -138,6 +139,10 @@ export function useDetectorState(cameraEnabled: boolean, manifestationsEnabled: 
       intensity: entityEngine.getIntensity(),
       mood: entityEngine.getMood(),
     });
+
+    if (isPresenceDetected) {
+      entityEngine.recordDetection();
+    }
 
     entityEngine.stimulate(0.05);
 

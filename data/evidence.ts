@@ -1,3 +1,5 @@
+import { persistenceService } from "@/state/persistenceService";
+
 export type EvidenceType = "capture" | "message" | "anomaly";
 
 export interface EvidenceEntry {
@@ -17,6 +19,32 @@ export interface EvidenceEntry {
 class EvidenceStore {
   private evidence: EvidenceEntry[] = [];
   private idCounter = 1;
+  private isInitialized = false;
+
+  async initialize(): Promise<void> {
+    if (this.isInitialized) return;
+
+    const saved = await persistenceService.loadEvidence();
+
+    if (saved && saved.length > 0) {
+      this.evidence = saved.slice(0, 100);
+
+      const maxId = Math.max(
+        0,
+        ...this.evidence.map((e) => {
+          const match = e.id.match(/_(\d+)$/);
+          return match ? parseInt(match[1], 10) : 0;
+        })
+      );
+      this.idCounter = maxId + 1;
+
+      if (__DEV__) {
+        console.log(`[EvidenceStore] Restored ${this.evidence.length} evidence entries`);
+      }
+    }
+
+    this.isInitialized = true;
+  }
 
   public addEvidence(
     type: EvidenceType,
@@ -36,6 +64,8 @@ class EvidenceStore {
     if (this.evidence.length > 100) {
       this.evidence = this.evidence.slice(0, 100);
     }
+
+    this.saveEvidence();
 
     return entry;
   }
@@ -60,18 +90,24 @@ class EvidenceStore {
     return this.evidence.length;
   }
 
-  public clearEvidence(): void {
+  public async clearEvidence(): Promise<void> {
     this.evidence = [];
     this.idCounter = 1;
+    await persistenceService.clearEvidence();
   }
 
   public removeEvidence(id: string): boolean {
     const index = this.evidence.findIndex((e) => e.id === id);
     if (index !== -1) {
       this.evidence.splice(index, 1);
+      this.saveEvidence();
       return true;
     }
     return false;
+  }
+
+  private async saveEvidence(): Promise<void> {
+    await persistenceService.saveEvidence(this.evidence);
   }
 }
 

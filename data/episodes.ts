@@ -121,7 +121,44 @@ export const EPISODES: Episode[] = [
   },
 ];
 
+import {
+  persistenceService,
+  type EpisodesPersistedState,
+} from "@/state/persistenceService";
+
 class EpisodeManager {
+  private isInitialized = false;
+
+  async initialize(): Promise<void> {
+    if (this.isInitialized) return;
+
+    const saved = await persistenceService.loadEpisodes();
+
+    if (saved) {
+      for (const episodeId of saved.unlockedEpisodeIds) {
+        const episode = EPISODES.find((ep) => ep.id === episodeId);
+        if (episode && episode.status === "locked") {
+          episode.status = "available";
+        }
+      }
+
+      for (const episodeId of saved.completedEpisodeIds) {
+        const episode = EPISODES.find((ep) => ep.id === episodeId);
+        if (episode && episode.status !== "completed") {
+          episode.status = "completed";
+        }
+      }
+
+      if (__DEV__) {
+        console.log(
+          `[EpisodeManager] Restored ${saved.unlockedEpisodeIds.length} unlocked, ${saved.completedEpisodeIds.length} completed episodes`
+        );
+      }
+    }
+
+    this.isInitialized = true;
+  }
+
   public getEpisodes(): Episode[] {
     return [...EPISODES];
   }
@@ -178,6 +215,7 @@ class EpisodeManager {
     const episode = EPISODES.find((ep) => ep.id === episodeId);
     if (episode && episode.status === "locked") {
       episode.status = "available";
+      this.saveState();
     }
   }
 
@@ -185,7 +223,29 @@ class EpisodeManager {
     const episode = EPISODES.find((ep) => ep.id === episodeId);
     if (episode && episode.status === "available") {
       episode.status = "completed";
+      this.saveState();
     }
+  }
+
+  private async saveState(): Promise<void> {
+    const unlockedEpisodeIds: string[] = [];
+    const completedEpisodeIds: string[] = [];
+
+    for (const episode of EPISODES) {
+      if (episode.status === "available" || episode.status === "completed") {
+        unlockedEpisodeIds.push(episode.id);
+      }
+      if (episode.status === "completed") {
+        completedEpisodeIds.push(episode.id);
+      }
+    }
+
+    const state: EpisodesPersistedState = {
+      unlockedEpisodeIds,
+      completedEpisodeIds,
+    };
+
+    await persistenceService.saveEpisodes(state);
   }
 }
 
