@@ -14,6 +14,7 @@ interface DailyNotificationState {
   date: string;
   count: number;
   scheduledIds: string[];
+  lastScheduledAt: number;
 }
 
 const FREQUENCY_CAPS = {
@@ -29,6 +30,7 @@ class AmbientNotificationScheduler {
   private frequency: FrequencyLevel = "normal";
   private quietHours: QuietHours = { start: "23:00", end: "07:00" };
   private dailyState: DailyNotificationState | null = null;
+  private isScheduling: boolean = false;
 
   async initialize(
     enabled: boolean,
@@ -46,6 +48,17 @@ class AmbientNotificationScheduler {
     } else {
       await this.cancelAll();
     }
+  }
+
+  async checkAndRescheduleIfNewDay(): Promise<void> {
+    if (!this.isEnabled || this.isScheduling) {
+      if (this.isScheduling && __DEV__) {
+        console.log("[AmbientScheduler] Scheduling in progress, deferring rollover check");
+      }
+      return;
+    }
+
+    await this.loadDailyState(true);
   }
 
   async updateSettings(
@@ -67,18 +80,47 @@ class AmbientNotificationScheduler {
     }
   }
 
-  private async loadDailyState(): Promise<void> {
+  private async loadDailyState(autoScheduleIfNewDay: boolean = false): Promise<boolean> {
+    if (this.isScheduling) {
+      if (__DEV__) {
+        console.log("[AmbientScheduler] Scheduling in progress, skipping state reload");
+      }
+      return false;
+    }
+    
+    let isNewDay = false;
+    
     try {
       const stored = await AsyncStorage.getItem(STORAGE_KEY_DAILY_STATE);
+      const today = this.getTodayDateString();
+      const now = Date.now();
+      
       if (stored) {
         const state: DailyNotificationState = JSON.parse(stored);
-        const today = this.getTodayDateString();
         
         if (state.date === today) {
           this.dailyState = state;
+          
+          const timeSinceLastSchedule = now - (state.lastScheduledAt || 0);
+          const fiveMinutes = 5 * 60 * 1000;
+          
+          if (autoScheduleIfNewDay && this.isEnabled && timeSinceLastSchedule < fiveMinutes) {
+            if (__DEV__) {
+              console.log(`[AmbientScheduler] Recently scheduled (${Math.floor(timeSinceLastSchedule / 1000)}s ago), skipping duplicate`);
+            }
+            return false;
+          }
         } else {
+          if (__DEV__) {
+            console.log(`[AmbientScheduler] New day detected: ${state.date} → ${today}`);
+          }
+          isNewDay = true;
           this.dailyState = this.createFreshDailyState();
           await this.saveDailyState();
+          
+          if (autoScheduleIfNewDay && this.isEnabled) {
+            await this.scheduleNotifications();
+          }
         }
       } else {
         this.dailyState = this.createFreshDailyState();
@@ -88,6 +130,8 @@ class AmbientNotificationScheduler {
       console.error("[AmbientScheduler] Failed to load daily state:", error);
       this.dailyState = this.createFreshDailyState();
     }
+    
+    return isNewDay;
   }
 
   private async saveDailyState(): Promise<void> {
@@ -108,6 +152,7 @@ class AmbientNotificationScheduler {
       date: this.getTodayDateString(),
       count: 0,
       scheduledIds: [],
+      lastScheduledAt: 0,
     };
   }
 
@@ -117,54 +162,63 @@ class AmbientNotificationScheduler {
   }
 
   private async scheduleNotifications(): Promise<void> {
-    if (!this.isEnabled) return;
-
-    await this.loadDailyState();
-    if (!this.dailyState) return;
-
-    const cap = FREQUENCY_CAPS[this.frequency];
-    const remaining = cap - this.dailyState.count;
-
-    if (remaining <= 0) {
-      if (__DEV__) {
-        console.log(`[AmbientScheduler] Daily cap reached (${cap}), no more notifications today`);
+    if (!this.isEnabled || !this.dailyState || this.isScheduling) {
+      if (this.isScheduling && __DEV__) {
+        console.log(`[AmbientScheduler] Already scheduling, skipping duplicate call`);
       }
       return;
     }
 
-    const mood = entityEngine.getMood();
-    const intensity = entityEngine.getIntensity();
-    
-    let notificationsToSchedule = remaining;
-    
-    if (mood === "dormant" && intensity < 0.2) {
-      notificationsToSchedule = Math.max(1, Math.floor(remaining * 0.3));
-    }
+    this.isScheduling = true;
 
-    const times = this.generateRandomTimes(notificationsToSchedule);
+    try {
+      const cap = FREQUENCY_CAPS[this.frequency];
+      const remaining = cap - this.dailyState.count;
 
-    for (const time of times) {
-      const message = messageSystem.getMessage(mood);
-      const payload: AmbientPayload = {
-        title: "LINGR",
-        body: message,
-        tag: mood,
-      };
-
-      try {
-        const notificationId = await notificationService.scheduleAmbientNotification(
-          time,
-          payload
-        );
-        
-        this.dailyState.scheduledIds.push(notificationId);
-        this.dailyState.count++;
-      } catch (error) {
-        console.error("[AmbientScheduler] Failed to schedule notification:", error);
+      if (remaining <= 0) {
+        if (__DEV__) {
+          console.log(`[AmbientScheduler] Daily cap reached (${cap}), no more notifications today`);
+        }
+        return;
       }
-    }
 
-    await this.saveDailyState();
+      const mood = entityEngine.getMood();
+      const intensity = entityEngine.getIntensity();
+      
+      let notificationsToSchedule = remaining;
+      
+      if (mood === "dormant" && intensity < 0.2) {
+        notificationsToSchedule = Math.max(1, Math.floor(remaining * 0.3));
+      }
+
+      const times = this.generateRandomTimes(notificationsToSchedule);
+
+      for (const time of times) {
+        const message = messageSystem.getMessage(mood);
+        const payload: AmbientPayload = {
+          title: "LINGR",
+          body: message,
+          tag: mood,
+        };
+
+        try {
+          const notificationId = await notificationService.scheduleAmbientNotification(
+            time,
+            payload
+          );
+          
+          this.dailyState.scheduledIds.push(notificationId);
+          this.dailyState.count++;
+        } catch (error) {
+          console.error("[AmbientScheduler] Failed to schedule notification:", error);
+        }
+      }
+
+      this.dailyState.lastScheduledAt = Date.now();
+      await this.saveDailyState();
+    } finally {
+      this.isScheduling = false;
+    }
   }
 
   private generateRandomTimes(count: number): Date[] {
@@ -244,7 +298,13 @@ class AmbientNotificationScheduler {
     
     if (this.dailyState) {
       this.dailyState.scheduledIds = [];
+      this.dailyState.count = 0;
+      this.dailyState.lastScheduledAt = 0;
       await this.saveDailyState();
+      
+      if (__DEV__) {
+        console.log("[AmbientScheduler] Cancelled all notifications and reset daily state");
+      }
     }
   }
 

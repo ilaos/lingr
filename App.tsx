@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, AppState, AppStateStatus } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
@@ -26,6 +26,17 @@ export default function App() {
 
     initializeNotifications();
 
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      if (nextAppState === "active") {
+        ambientNotificationScheduler.checkAndRescheduleIfNewDay();
+      }
+    };
+
+    const appStateSubscription = AppState.addEventListener(
+      "change",
+      handleAppStateChange
+    );
+
     const notificationListener =
       notificationService.addNotificationReceivedListener((notification) => {
         if (__DEV__) {
@@ -42,6 +53,7 @@ export default function App() {
 
     return () => {
       eventsScheduler.cleanup();
+      appStateSubscription.remove();
       notificationListener.remove();
       responseListener.remove();
     };
