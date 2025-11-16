@@ -8,8 +8,17 @@ import { StatusBar } from "expo-status-bar";
 
 import MainTabNavigator from "@/navigation/MainTabNavigator";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { eventsScheduler } from "@/data/eventsScheduler";
 
 export default function App() {
+  React.useEffect(() => {
+    eventsScheduler.start();
+
+    return () => {
+      eventsScheduler.cleanup();
+    };
+  }, []);
+
   return (
   <ErrorBoundary>
     <SafeAreaProvider>

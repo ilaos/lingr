@@ -90,14 +90,22 @@ export default function EvidenceScreen() {
     </View>
   );
 
-  const renderItem = ({ item }: { item: typeof evidence[0] }) => (
-    <EvidenceCard
-      type={item.type}
-      timestamp={item.timestamp}
-      thumbnail={item.thumbnail}
-      onPress={() => {}}
-    />
-  );
+  const renderItem = ({ item }: { item: typeof evidence[0] }) => {
+    const date = new Date(item.timestamp);
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    const seconds = String(date.getSeconds()).padStart(2, "0");
+    const timestamp = `${hours}:${minutes}:${seconds}`;
+
+    return (
+      <EvidenceCard
+        type={item.type}
+        timestamp={timestamp}
+        thumbnail={item.thumbnail}
+        onPress={() => {}}
+      />
+    );
+  };
 
   const FilterButton = ({
     label,
